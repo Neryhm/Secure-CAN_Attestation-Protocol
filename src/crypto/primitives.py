@@ -1,4 +1,4 @@
-from charm.toolbox.pairinggroup import PairingGroup, G1, G2, Zr, pair
+from charm.toolbox.pairinggroup import PairingGroup, G1, G2, ZR, pair
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 import os
@@ -9,7 +9,7 @@ class CryptoPrimitives:
     def __init__(self):
         # Initialize pairing group with BN256 curve (closest match to BN_P256)
         # See Section 6.1: "Let E be an elliptic curve defined over F..."
-        self.group = PairingGroup('BN256')
+        self.group = PairingGroup('BN254')
         self.g1 = self.group.random(G1)  # Base point G0 in E (G1 group)
         self.g2 = self.group.random(G2)  # Base point G0_bar in E_bar (G2 group)
 
@@ -23,7 +23,7 @@ class CryptoPrimitives:
         hash_bytes = digest.finalize()
         # Convert first 16 bytes to an integer and map to Zq
         hash_int = int.from_bytes(hash_bytes[:16], 'big')
-        return self.group.init(Zr, hash_int % self.group.order())
+        return self.group.init(ZR, hash_int % self.group.order())
 
     def hash_to_G1(self, data):
         """Hash to a point in G1. See Section 6.1: H_1:{0,1}^* -> E"""
@@ -31,7 +31,7 @@ class CryptoPrimitives:
 
     def generate_random_Zq(self):
         """Generate a random element in Zq. Used for keys and nonces."""
-        return self.group.random(Zr)
+        return self.group.random(ZR)
 
     # Elliptic Curve Operations
     def ec_multiply(self, scalar, point, group_type=G1):

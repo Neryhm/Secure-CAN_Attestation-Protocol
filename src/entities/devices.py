@@ -28,12 +28,12 @@ class EdgeDevice:
         self.device_id = device_id
         self.crypto = CryptoPrimitives()
         self.tpm = TPMEmulator()
-        self.tpm.initialize()  # Initialize TPM with key pair
-        self.private_key = None  # sk_0, set in Join phase
-        self.public_key = None  # PK_0 = sk_0 * G_0
-        self.credential = None  # Credential from Issuer
-        self.branch_keys = {}  # Map of IoT device IDs to branch keys
-        self.connected_iot_devices = []  # List of IoTDevice objects
+        self.tpm.initialize()  # TPM sets its own keys
+        self.private_key = self.tpm.private_key  # Use TPM's private key
+        self.public_key = self.tpm.public_key   # Use TPM's public key
+        self.credential = None
+        self.branch_keys = {}
+        self.connected_iot_devices = []
 
     def add_iot_device(self, iot_device):
         """Connect an IoT device and assign a branch key."""
@@ -91,13 +91,15 @@ def test_entities():
     edge = EdgeDevice("edge_1")
     iot1 = IoTDevice("iot_1")
     iot2 = IoTDevice("iot_2")
-    tracer = Tracer(issuer.tracing_keypair[0])  # Pass x_T after generation
+    
+    # Generate tracing keypair FIRST
+    issuer.generate_tracing_keypair()
+    tracer = Tracer(issuer.tracing_keypair[0])  # Now x_T is set
     
     # Set up relationships
     verifier.set_issuer_public_key(issuer.public_key)
     edge.add_iot_device(iot1)
     edge.add_iot_device(iot2)
-    issuer.generate_tracing_keypair()
     
     # Basic checks
     assert edge.public_key == edge.tpm.get_public_key(), "Edge TPM key mismatch"

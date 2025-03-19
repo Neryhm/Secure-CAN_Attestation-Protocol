@@ -3,7 +3,9 @@ import charm.core.engine.util
 import cryptography
 import asyncio
 from crypto.primitives import CryptoPrimitives
+from crypto.primitives import test_primitives
 from entities.tpm_emulator import TPMEmulator
+from entities.tpm_emulator import test_tpm_emulator
 from entities.devices import test_entities
 from phases.key_setup import test_key_setup
 
@@ -12,7 +14,7 @@ def check_environment():
     try:
         # Check Charm-Crypto
         from charm.toolbox.pairinggroup import PairingGroup, G1
-        group = PairingGroup('BN256')  # BN_P256-like curve
+        group = PairingGroup('BN254')  # BN_P256-like curve
         print("Charm-Crypto is installed and functional.")
     except ImportError:
         print("Error: Charm-Crypto is not installed. Install with 'pip install charm-crypto'.")
@@ -38,7 +40,7 @@ def check_environment():
     # Check for CryptoPrimitives
     try:
         crypto = CryptoPrimitives()
-        crypto.test_primitives()
+        test_primitives()
         print("Cryptographic primitives are functional.")
     except Exception as e:
         print(f"Error in cryptographic primitives: {e}")
@@ -48,7 +50,7 @@ def check_environment():
     try:
         tpm = TPMEmulator()
         tpm.initialize()
-        tpm.test_tpm_emulator()
+        test_tpm_emulator()
         print("TPM emulator is functional.")
     except Exception as e:
         print(f"Error in TPM emulator: {e}")

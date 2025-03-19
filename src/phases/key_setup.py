@@ -1,5 +1,6 @@
 from crypto.primitives import CryptoPrimitives
 from entities.devices import Issuer, InternalVerifier, EdgeDevice, IoTDevice
+from charm.toolbox.pairinggroup import G1, G2
 
 class KeySetup:
     """Implements the Key Setup phase of the SPARK protocol."""
@@ -39,8 +40,9 @@ class KeySetup:
         See Section 7.2.1: 'TPM chooses secret signing key x_0'"""
         # TPM key pair (x_0, PK) is already set in TPMEmulator.initialize()
         # For simulation, generate an additional key pair for Edge (sk_0, PK_0)
-        edge_device.private_key = self.crypto.generate_random_Zq()
-        edge_device.public_key = self.crypto.ec_multiply(edge_device.private_key, self.crypto.g1)
+        # edge_device.private_key = self.crypto.generate_random_Zq()
+        # edge_device.public_key = self.crypto.ec_multiply(edge_device.private_key, self.crypto.g1)
+        pass
 
     def setup_iot_device(self, iot_device):
         """Initialize IoT device with a key pair (to be certified in Join)."""
