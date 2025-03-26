@@ -1,6 +1,7 @@
 from crypto.primitives import CryptoPrimitives
 from entities.devices import InternalVerifier,Issuer,EdgeDevice,IoTDevice
 from charm.toolbox.pairinggroup import G1, G2
+import asyncio
 
 class VerificationPhase:
     """Implements the Verification phase of the SPARK protocol."""
@@ -22,7 +23,7 @@ class VerificationPhase:
         computed_c = self.crypto.hash_to_Zq(R, message)
         return c == computed_c
 
-    def run(self, verifier, edge_devices, message="attestation_request"):
+    async def run(self, verifier, edge_devices, message="attestation_request"):
         """Execute the Verification phase."""
         results = {}
         
@@ -39,7 +40,7 @@ class VerificationPhase:
         verifier.attestation_results = results
         return results
 
-def test_verification_phase():
+async def test_verification_phase():
     """Test the Verification phase."""
     from phases.key_setup import KeySetup
     from phases.join import JoinPhase
@@ -65,11 +66,11 @@ def test_verification_phase():
     
     # Run Attestation
     attestation = AttestationPhase(group_elements)
-    attestation.run(verifier, edge_devices)
+    await attestation.run(verifier, edge_devices)
     
     # Run Verification
     verification = VerificationPhase(group_elements)
-    results = verification.run(verifier, edge_devices)
+    results = await verification.run(verifier, edge_devices)
     
     # Verify
     assert "edge_1" in results, "Edge verification missing"
@@ -80,4 +81,4 @@ def test_verification_phase():
     print(f"Verification results: {results}")
 
 if __name__ == "__main__":
-    test_verification_phase()
+    asyncio.run(test_verification_phase())
