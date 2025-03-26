@@ -43,7 +43,7 @@ class AttestationPhase:
             # Aggregate s values
             s_total = r_edge + c * edge.tpm.private_key
             for iot, (r, _) in zip(edge.connected_iot_devices, iot_signatures):
-                s_total += r + c * iot.branch_key
+                s_total += r + c * iot.private_key
             
             # Create the 3-tuple signature
             sigma = (s_total, c, R_total)

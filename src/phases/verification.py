@@ -9,22 +9,25 @@ class VerificationPhase:
         self.group_elements = group_elements
 
     def verify_signature(self, verifier, edge, signature, message="attestation_request"):
-        # Unpack the 3-tuple signature: aggregated s, challenge c, and commitment R_total
         s, c, R_total = signature
-        
-        # Compute the total public key: Edge PK + sum of connected IoT device PKs
         total_pk = edge.public_key
         for iot in edge.connected_iot_devices:
             total_pk = self.crypto.ec_add(total_pk, iot.public_key)
         
-        # Verify the signature equation: s * G_0 == R_total + c * total_pk
         left = self.crypto.ec_multiply(s, self.group_elements['G_0'], G1)
         right = self.crypto.ec_add(R_total, self.crypto.ec_multiply(c, total_pk, G1))
-        
-        # Verify the challenge: c should equal H(R_total || message)
         computed_c = self.crypto.hash_to_Zq(R_total, message)
         
-        # Return True if both the signature equation and challenge match
+        # Add debug prints
+        print(f"Device: {edge.device_id}")
+        print(f"  Left (s * G_0): {left}")
+        print(f"  Right (R_total + c * total_pk): {right}")
+        print(f"  Signature equation holds: {left == right}")
+        print(f"  c from signature: {c}")
+        print(f"  Computed c: {computed_c}")
+        print(f"  Challenge matches: {c == computed_c}")
+        print(f"  Connected IoT devices: {[iot.device_id for iot in edge.connected_iot_devices]}")
+        
         return left == right and c == computed_c
 
     async def run(self, verifier, edge_devices, message="attestation_request"):
