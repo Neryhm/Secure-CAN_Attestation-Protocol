@@ -13,14 +13,45 @@ async def run_simulation():
     # Initialize entities
     issuer = Issuer()
     verifier = InternalVerifier()
+
     edge1 = EdgeDevice("edge_1")
     iot1 = IoTDevice("iot_1")
     iot2 = IoTDevice("iot_2")
+    iot3 = IoTDevice("iot_3")
+    iot4 = IoTDevice("iot_4")
+    iot5 = IoTDevice("iot_5")
+
+    edge2 = EdgeDevice("edge_2")
+    iot6 = IoTDevice("iot_6")
+    iot7 = IoTDevice("iot_7")
+    iot8 = IoTDevice("iot_8")
+    iot9 = IoTDevice("iot_9")
+    iot10 = IoTDevice("iot_10")
+
+    edge3 = EdgeDevice("edge_3")
+    iot11 = IoTDevice("iot_11")
+    iot12 = IoTDevice("iot_12")
+    iot13 = IoTDevice("iot_13")
+    iot14 = IoTDevice("iot_14")
+    iot15 = IoTDevice("iot_15")
+
+    edge4 = EdgeDevice("edge_4")
+    iot16 = IoTDevice("iot_16")
+    iot17 = IoTDevice("iot_17")
+    iot18 = IoTDevice("iot_18")
+    iot19 = IoTDevice("iot_19")
+    iot20 = IoTDevice("iot_20")
+
     issuer.generate_tracing_keypair()
     tracer = Tracer(issuer.tracing_keypair[0])
     
     edge_devices = [edge1]
-    iot_devices_per_edge = {"edge_1": [iot1, iot2]}
+    iot_devices_per_edge = {
+        "edge_1": [iot1, iot2, iot3, iot4, iot5],
+        "edge_2": [iot6, iot7, iot8, iot9, iot10],
+        "edge_3": [iot11, iot12, iot13, iot14, iot15],
+        "edge_4": [iot16, iot17, iot18, iot19, iot20]
+        }
     
     # Step 1: Key Setup
     print("=== Key Setup Phase ===")
