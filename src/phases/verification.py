@@ -1,5 +1,5 @@
 from crypto.primitives import CryptoPrimitives
-from entities.devices import InternalVerifier
+from entities.devices import InternalVerifier,Issuer,EdgeDevice,IoTDevice
 from charm.toolbox.pairinggroup import G1, G2
 
 class VerificationPhase:
