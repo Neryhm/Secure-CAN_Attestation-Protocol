@@ -1,5 +1,8 @@
-from crypto.primitives import CryptoPrimitives
-from entities.devices import Issuer, EdgeDevice, IoTDevice
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from src.crypto.primitives import CryptoPrimitives
+from src.entities.devices import Issuer, EdgeDevice, IoTDevice, InternalVerifier
 from charm.toolbox.pairinggroup import G1, G2
 
 class JoinPhase:

@@ -1,5 +1,3 @@
-# spark_simulation/src/network/comms.py
-
 import asyncio
 
 class NetworkSimulator:

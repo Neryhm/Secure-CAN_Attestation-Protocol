@@ -1,5 +1,8 @@
-from crypto.primitives import CryptoPrimitives
-from entities.devices import InternalVerifier,Issuer,EdgeDevice,IoTDevice
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from src.crypto.primitives import CryptoPrimitives
+from src.entities.devices import InternalVerifier,Issuer,EdgeDevice,IoTDevice
 from charm.toolbox.pairinggroup import G1, G2
 import asyncio
 

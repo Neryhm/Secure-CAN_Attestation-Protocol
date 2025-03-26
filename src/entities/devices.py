@@ -1,5 +1,8 @@
-from crypto.primitives import CryptoPrimitives
-from entities.tpm_emulator import TPMEmulator
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from src.crypto.primitives import CryptoPrimitives
+from src.entities.tpm_emulator import TPMEmulator
 
 class IoTDevice:
     """Represents an IoT device (e.g., ECU) in the SPARK protocol."""

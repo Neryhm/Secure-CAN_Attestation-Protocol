@@ -1,14 +1,17 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import unittest
 import asyncio
 from unittest import IsolatedAsyncioTestCase
-from crypto.primitives import CryptoPrimitives
-from entities.tpm_emulator import TPMEmulator
-from entities.devices import Issuer, EdgeDevice, IoTDevice, InternalVerifier, Tracer
-from phases.key_setup import KeySetup
-from phases.join import JoinPhase
-from phases.attestation import AttestationPhase
-from phases.verification import VerificationPhase
-from network.comms import NetworkSimulator
+from src.crypto.primitives import CryptoPrimitives
+from src.entities.tpm_emulator import TPMEmulator
+from src.entities.devices import Issuer, EdgeDevice, IoTDevice, InternalVerifier, Tracer
+from src.phases.key_setup import KeySetup
+from src.phases.join import JoinPhase
+from src.phases.attestation import AttestationPhase
+from src.phases.verification import VerificationPhase
+from src.network.comms import NetworkSimulator
 
 class TestSparkSimulation(IsolatedAsyncioTestCase):
     """Unit tests for the SPARK protocol simulation."""

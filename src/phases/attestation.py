@@ -1,6 +1,9 @@
-from crypto.primitives import CryptoPrimitives
-from entities.devices import EdgeDevice, IoTDevice, InternalVerifier, Issuer
-from network.comms import NetworkSimulator
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from src.crypto.primitives import CryptoPrimitives
+from src.entities.devices import EdgeDevice, IoTDevice, InternalVerifier, Issuer
+from src.network.comms import NetworkSimulator
 from charm.toolbox.pairinggroup import G1, G2
 import asyncio
 

@@ -1,5 +1,3 @@
-# spark_simulation/src/main.py
-
 import asyncio
 from crypto.primitives import CryptoPrimitives
 from entities.devices import Issuer, InternalVerifier, EdgeDevice, IoTDevice, Tracer
