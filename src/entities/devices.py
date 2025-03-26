@@ -34,6 +34,7 @@ class EdgeDevice:
         self.credential = None
         self.branch_keys = {}
         self.connected_iot_devices = []
+        self.tracing_token = None
 
     def add_iot_device(self, iot_device):
         """Connect an IoT device and assign a branch key."""
@@ -82,34 +83,52 @@ class Tracer:
     def __init__(self, issuer_tracing_private_key):
         self.crypto = CryptoPrimitives()
         self.tracing_private_key = issuer_tracing_private_key  # x_T from Issuer
+        self.token_to_device = {}  # Map decrypted tokens to device IDs
+
+    def trace_device(self, edge_device):
+        """Decrypt the tracing token and identify the Edge device."""
+        if not hasattr(edge_device, 'tracing_token') or edge_device.tracing_token is None:
+            return None
+        
+        # Decrypt the tracing token (C1, C2) using ElGamal
+        C1, C2 = edge_device.tracing_token
+        TK = self.crypto.elgamal_decrypt(self.tracing_private_key, (C1, C2), self.crypto.g1)
+        
+        # Store mapping (in practice, TK would be linked to device ID via a database)
+        self.token_to_device[TK] = edge_device.device_id
+        return edge_device.device_id
+    
 
 def test_entities():
     """Test the entity classes and their interactions."""
-    # Initialize entities
     issuer = Issuer()
     verifier = InternalVerifier()
     edge = EdgeDevice("edge_1")
     iot1 = IoTDevice("iot_1")
     iot2 = IoTDevice("iot_2")
     
-    # Generate tracing keypair FIRST
     issuer.generate_tracing_keypair()
-    tracer = Tracer(issuer.tracing_keypair[0])  # Now x_T is set
+    tracer = Tracer(issuer.tracing_keypair[0])
     
-    # Set up relationships
     verifier.set_issuer_public_key(issuer.public_key)
     edge.add_iot_device(iot1)
     edge.add_iot_device(iot2)
     
-    # Basic checks
+    # Simulate Join phase for tracing token
+    from phases.join import JoinPhase
+    join = JoinPhase({'G_0': edge.crypto.g1})  # Minimal group elements for test
+    join.run(issuer, [edge], {"edge_1": [iot1, iot2]})
+    
+    # Test tracing
+    traced_id = tracer.trace_device(edge)
+    
     assert edge.public_key == edge.tpm.get_public_key(), "Edge TPM key mismatch"
     assert iot1.branch_key in edge.branch_keys.values(), "Branch key not assigned"
     assert verifier.issuer_public_key == issuer.public_key, "Verifier key mismatch"
     assert tracer.tracing_private_key == issuer.tracing_keypair[0], "Tracer key mismatch"
+    assert traced_id == "edge_1", "Tracing failed to identify device"
     
     print("Entity classes initialized and connected successfully.")
     print(f"Edge device manages {len(edge.connected_iot_devices)} IoT devices.")
     print(f"Issuer public key: {issuer.public_key != None}")
-
-if __name__ == "__main__":
-    test_entities()
+    print(f"Traced device ID: {traced_id}")
