@@ -1,6 +1,7 @@
 charm-crypto     # For pairing-based cryptography and ECC
 cryptography    # For hashes and signatures
 asyncio                 # Built-in, no need to install separately
-
+pandas            # For data manipulation
+openpyxl        # For Excel file export
 # To install above dependencies:
 # pip install -r requirements.txt
