@@ -4,6 +4,8 @@ from network.comms import NetworkSimulator
 from charm.toolbox.pairinggroup import G1, G2
 import asyncio
 
+phase_data = []  # Global list to store debug prints
+
 class AttestationPhase:
     def __init__(self, group_elements):
         self.crypto = CryptoPrimitives()
@@ -13,8 +15,10 @@ class AttestationPhase:
     async def generate_iot_signature(self, iot_device, edge_id, message):
         r = self.crypto.generate_random_Zq()
         R = self.crypto.ec_multiply(r, self.group_elements['G_0'], G1)
-        return await self.network.send_message(iot_device.device_id, edge_id, 64, (r, R))
-
+        data = await self.network.send_message(iot_device.device_id, edge_id, 64, (r, R))
+        phase_data.append({"Phase": "Attestation_IoT", "Device_ID": iot_device.device_id, "r": str(r), "R": str(R)})
+        return data
+    
     async def run(self, verifier, edge_devices, message="attestation_request"):
         aggregated_signatures = {}
         
@@ -49,6 +53,7 @@ class AttestationPhase:
             sigma = (s_total, c, R_total)
             sigma_sent = await self.network.send_message(edge.device_id, "verifier", 128, sigma)
             aggregated_signatures[edge.device_id] = sigma_sent
+            phase_data.append({"Phase": "Attestation_Edge", "Device_ID": edge.device_id, "Signature": str(sigma_sent)})
         
         verifier.attestation_results = aggregated_signatures
         return aggregated_signatures
@@ -60,14 +65,10 @@ async def test_attestation_phase():
     
     issuer = Issuer()
     verifier = InternalVerifier()
-    edge1 = EdgeDevice("edge_1")
-    iot1 = IoTDevice("iot_1")
-    iot2 = IoTDevice("iot_2")
+    edge_devices = [EdgeDevice(f"edge_{i+1}") for i in range(4)]
+    iot_devices_per_edge = {edge.device_id: [IoTDevice(f"iot_{j+1}") for j in range(i*5, (i+1)*5)] for i, edge in enumerate(edge_devices)}
     
-    edge_devices = [edge1]
-    iot_devices_per_edge = {"edge_1": [iot1, iot2]}
-    
-    key_setup = KeySetup(num_iot_devices=2)
+    key_setup = KeySetup(num_iot_devices=20)
     group_elements = key_setup.run(issuer, verifier, edge_devices, iot_devices_per_edge)
     
     join = JoinPhase(group_elements)
@@ -76,7 +77,7 @@ async def test_attestation_phase():
     attestation = AttestationPhase(group_elements)
     signatures = await attestation.run(verifier, edge_devices)
     
-    assert "edge_1" in signatures, "Edge signature missing"
+    assert all(edge_id in signatures for edge_id in [f"edge_{i+1}" for i in range(4)]), "Edge signature missing"
     assert len(signatures["edge_1"]) == 3, "Invalid signature format"  # Expecting (s, c, R)
     print("Attestation phase with network simulation completed successfully.")
 

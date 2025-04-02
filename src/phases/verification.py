@@ -1,7 +1,12 @@
-from crypto.primitives import CryptoPrimitives
-from entities.devices import InternalVerifier, Issuer, EdgeDevice, IoTDevice
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from src.crypto.primitives import CryptoPrimitives
+from src.entities.devices import InternalVerifier, Issuer, EdgeDevice, IoTDevice
 from charm.toolbox.pairinggroup import G1, G2
 import asyncio
+
+phase_data = []  # Global list to store debug prints
 
 class VerificationPhase:
     def __init__(self, group_elements):
@@ -28,7 +33,20 @@ class VerificationPhase:
         print(f"  Challenge matches: {c == computed_c}")
         print(f"  Connected IoT devices: {[iot.device_id for iot in edge.connected_iot_devices]}")
         
-        return left == right and c == computed_c
+        result = left == right and c == computed_c
+        phase_data.append({
+            "Phase": "Verification",
+            "Device_ID": edge.device_id,
+            "s": str(s),
+            "c": str(c),
+            "R_total": str(R_total),
+            "Left": str(left),
+            "Right": str(right),
+            "Computed_c": str(computed_c),
+            "Result": result
+        })
+        return result
+    
 
     async def run(self, verifier, edge_devices, message="attestation_request"):
         results = {}
@@ -53,14 +71,10 @@ async def test_verification_phase():
     
     issuer = Issuer()
     verifier = InternalVerifier()
-    edge1 = EdgeDevice("edge_1")
-    iot1 = IoTDevice("iot_1")
-    iot2 = IoTDevice("iot_2")
+    edge_devices = [EdgeDevice(f"edge_{i+1}") for i in range(4)]
+    iot_devices_per_edge = {edge.device_id: [IoTDevice(f"iot_{j+1}") for j in range(i*5, (i+1)*5)] for i, edge in enumerate(edge_devices)}
     
-    edge_devices = [edge1]
-    iot_devices_per_edge = {"edge_1": [iot1, iot2]}
-    
-    key_setup = KeySetup(num_iot_devices=2)
+    key_setup = KeySetup(num_iot_devices=20)
     group_elements = key_setup.run(issuer, verifier, edge_devices, iot_devices_per_edge)
     
     join = JoinPhase(group_elements)
@@ -72,8 +86,8 @@ async def test_verification_phase():
     verification = VerificationPhase(group_elements)
     results = await verification.run(verifier, edge_devices)
     
+    assert all(results.values()), "Verification failed"
     print(f"Verification results: {results}")
-    assert "edge_1" in results and results["edge_1"], "Verification failed"
 
 if __name__ == "__main__":
     asyncio.run(test_verification_phase())

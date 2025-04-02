@@ -17,45 +17,15 @@ async def run_simulation():
     issuer = Issuer()
     verifier = InternalVerifier()
 
-    edge1 = EdgeDevice("edge_1")
-    iot1 = IoTDevice("iot_1")
-    iot2 = IoTDevice("iot_2")
-    iot3 = IoTDevice("iot_3")
-    iot4 = IoTDevice("iot_4")
-    iot5 = IoTDevice("iot_5")
-
-    edge2 = EdgeDevice("edge_2")
-    iot6 = IoTDevice("iot_6")
-    iot7 = IoTDevice("iot_7")
-    iot8 = IoTDevice("iot_8")
-    iot9 = IoTDevice("iot_9")
-    iot10 = IoTDevice("iot_10")
-
-    edge3 = EdgeDevice("edge_3")
-    iot11 = IoTDevice("iot_11")
-    iot12 = IoTDevice("iot_12")
-    iot13 = IoTDevice("iot_13")
-    iot14 = IoTDevice("iot_14")
-    iot15 = IoTDevice("iot_15")
-
-    edge4 = EdgeDevice("edge_4")
-    iot16 = IoTDevice("iot_16")
-    iot17 = IoTDevice("iot_17")
-    iot18 = IoTDevice("iot_18")
-    iot19 = IoTDevice("iot_19")
-    iot20 = IoTDevice("iot_20")
-
+    edge_devices = [EdgeDevice(f"edge_{i+1}") for i in range(4)]
+    iot_devices_per_edge = {edge.device_id: [IoTDevice(f"iot_{j+1}") for j in range(i*5, (i+1)*5)] for i, edge in enumerate(edge_devices)}
+    
     issuer.generate_tracing_keypair()
     tracer = Tracer(issuer.tracing_keypair[0])
     
-    edge_devices = [edge1, edge2, edge3, edge4]
-    iot_devices_per_edge = {
-        "edge_1": [iot1, iot2, iot3, iot4, iot5],
-        "edge_2": [iot6, iot7, iot8, iot9, iot10],
-        "edge_3": [iot11, iot12, iot13, iot14, iot15],
-        "edge_4": [iot16, iot17, iot18, iot19, iot20]
-        }
-    
+
+
+
     # Step 1: Key Setup
     print("=== Key Setup Phase ===")
     key_setup = KeySetup(num_iot_devices=20)
@@ -63,34 +33,6 @@ async def run_simulation():
     print("Group elements:", len(group_elements))
     print("Issuer private key:", issuer.private_key)
     print("Issuer public key:", issuer.public_key)
-    print("Edge1 TPM private key:", edge1.tpm.private_key)
-    print("Edge1 TPM public key:", edge1.tpm.public_key)
-    print("Edge2 TPM private key:", edge2.tpm.private_key)
-    print("Edge2 TPM public key:", edge2.tpm.public_key)
-    print("Edge3 TPM private key:", edge3.tpm.private_key)
-    print("Edge3 TPM public key:", edge3.tpm.public_key)
-    print("Edge4 TPM private key:", edge4.tpm.private_key)
-    print("Edge4 TPM public key:", edge4.tpm.public_key)
-    print("IoT1 branch key:", iot1.branch_key)
-    print("IoT2 branch key:", iot2.branch_key)
-    print("IoT3 branch key:", iot3.branch_key)
-    print("IoT4 branch key:", iot4.branch_key)
-    print("IoT5 branch key:", iot5.branch_key)
-    print("IoT6 branch key:", iot6.branch_key)
-    print("IoT7 branch key:", iot7.branch_key)
-    print("IoT8 branch key:", iot8.branch_key)
-    print("IoT9 branch key:", iot9.branch_key)
-    print("IoT10 branch key:", iot10.branch_key)
-    print("IoT11 branch key:", iot11.branch_key)
-    print("IoT12 branch key:", iot12.branch_key)
-    print("IoT13 branch key:", iot13.branch_key)
-    print("IoT14 branch key:", iot14.branch_key)
-    print("IoT15 branch key:", iot15.branch_key)
-    print("IoT16 branch key:", iot16.branch_key)
-    print("IoT17 branch key:", iot17.branch_key)
-    print("IoT18 branch key:", iot18.branch_key)
-    print("IoT19 branch key:", iot19.branch_key)
-    print("IoT20 branch key:", iot20.branch_key)
 
     print("Key Setup finished.\n")
     
@@ -98,14 +40,6 @@ async def run_simulation():
     print("=== Join Phase ===")
     join = JoinPhase(group_elements)
     join.run(issuer, edge_devices, iot_devices_per_edge)
-    print("Edge1 credential:", edge1.credential)
-    print("Edge1 tracing token:", edge1.tracing_token)
-    print("Edge2 credential:", edge2.credential)
-    print("Edge2 tracing token:", edge2.tracing_token)
-    print("Edge3 credential:", edge3.credential)
-    print("Edge3 tracing token:", edge3.tracing_token)
-    print("Edge4 credential:", edge4.credential)
-    print("Edge4 tracing token:", edge4.tracing_token)
 
     print("Join finished.\n")
     
@@ -113,7 +47,7 @@ async def run_simulation():
     print("=== Attestation Phase ===")
     attestation = AttestationPhase(group_elements)
     signatures = await attestation.run(verifier, edge_devices)
-    s, c, R = signatures["edge_1"]
+    s, c, R = signatures["edge_devices[0]"]
     print("Edge signature components:")
     print("  s (signature scalar):", s)
     print("  c (challenge):", c)
@@ -129,22 +63,32 @@ async def run_simulation():
     
     # Step 5: Tracing
     print("=== Tracing Phase ===")
-    traced_id = tracer.trace_device(edge1)
-    print("Decrypted tracing token:", edge1.tracing_token)
-    print("Traced device ID:", traced_id)
+    traced_ids = {}
+    for edge in edge_devices:
+        traced_id = tracer.trace_device(edge)
+        traced_ids[edge.device_id] = traced_id
+        phase_data.append({"Phase": "Tracing", "Device_ID": edge.device_id, "Traced_ID": traced_id, "Tracing_Token": str(edge.tracing_token)})
     print("Tracing finished.\n")
     
-    print("SPARK simulation completed.")
-    return results, traced_id
+    print("SPARK simulation completed-----------------------")
+    return results, traced_ids
 
 async def main():
     """Main entry point for the simulation."""
     try:
-        results, traced_id = await run_simulation()
+        results, traced_ids = await run_simulation()
         print("\nFinal Validation:")
         print("Verification status:", "All passed" if all(results.values()) else "Some failed")
-        print("Tracing correct:", "Yes" if traced_id == "edge_1" else "No")
+        print("Tracing correct:", "Yes" if all(traced_ids[edge_id] == edge_id for edge_id in traced_ids) else "No")
         print("Simulation finished successfully.")
+
+        # Export simulation data to Excel
+        print("Exporting simulation data to Excel...")
+        phase_data.append({"Phase": "Final_Results", "Verification_Status": str(results), "Tracing_Status": str(traced_ids)})
+        # Convert to DataFrame and save to Excel
+        df = pd.DataFrame(phase_data)
+        df.to_excel("spark_simulation_log.xlsx", index=False, engine='openpyxl')
+        print("Simulation data exported to 'spark_simulation_log.xlsx'.")
     except Exception as e:
         print(f"Simulation failed with error: {e}")
         raise

@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from src.crypto.primitives import CryptoPrimitives
 from charm.toolbox.pairinggroup import G1, G2
 
+phase_data = []
 class TPMEmulator:
     """Software emulation of TPM 2.0 features for SPARK protocol."""
 
@@ -24,6 +25,7 @@ class TPMEmulator:
         # Initialize PCRs (e.g., 0-23, but we'll use a subset for simplicity)
         for i in range(8):  # Simulate 8 PCRs
             self.pcrs[i] = self.crypto.hash_to_Zq(b"initial_state")  # Default value
+        phase_data.append({"Phase": "TPM_Init", "Device": "TPM", "Private_Key": str(self.private_key), "Public_Key": str(self.public_key)})
 
     def extend_pcr(self, pcr_index, measurement):
         """Extend a PCR with a new measurement (hash chaining).
@@ -34,12 +36,14 @@ class TPMEmulator:
         current_value = self.pcrs[pcr_index]
         new_value = self.crypto.hash_to_Zq(current_value, measurement)
         self.pcrs[pcr_index] = new_value
+        phase_data.append({"Phase": "TPM_PCR_Extend", "PCR_Index": pcr_index, "New_Value": str(new_value)})
         return new_value
 
     def set_policy(self, expected_pcr_values):
         """Set a policy requiring specific PCR values for key usage.
         See Section 7.2.4: 'PolicyPCR ensures signing key is inoperable if compromised'"""
         self.policy = expected_pcr_values  # Dict of {pcr_index: expected_value}
+        phase_data.append({"Phase": "TPM_Set_Policy", "Policy": str(expected_pcr_values)})
 
     def check_policy(self):
         """Check if current PCR state satisfies the policy."""
@@ -68,6 +72,7 @@ class TPMEmulator:
         
         # Store omega_0 for later TPM2_Sign
         self.commit_state['omega_0'] = omega_0
+        phase_data.append({"Phase": "TPM_Commit", "R": str(R), "K": str(K) if K else None, "Omega_0": str(omega_0)})
         return R, K
 
     def TPM2_Sign(self, challenge):
@@ -81,6 +86,7 @@ class TPMEmulator:
         
         omega_0 = self.commit_state.pop('omega_0')  # Retrieve and clear
         s_0 = omega_0 + challenge * self.private_key  # s_0 = omega_0 + c * x_0
+        phase_data.append({"Phase": "TPM_Sign", "Signature": str(s_0), "Challenge": str(challenge)})
         return s_0
 
     def get_public_key(self):

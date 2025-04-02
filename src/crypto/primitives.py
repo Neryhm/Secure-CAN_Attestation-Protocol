@@ -3,6 +3,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 import os
 
+def serialize_point(point):
+    return str(point)  # Converts point to string; adjust if you need coordinates like point[0], point[1]
 class CryptoPrimitives:
     """Class to manage SPARK's cryptographic operations."""
 

@@ -1,5 +1,6 @@
 import asyncio
 
+phase_data = []  # Global list to store debug prints
 class NetworkSimulator:
     """Simulates CAN-like network communication with delays."""
 
@@ -14,6 +15,14 @@ class NetworkSimulator:
         
         # Simulate transmission delay
         await asyncio.sleep(delay_seconds)
+        phase_data.append({
+            "Phase": "Network_Send",
+            "Sender": sender_id,
+            "Receiver": receiver_id,
+            "Size_Bytes": message_size_bytes,
+            "Delay_ms": delay_seconds * 1000,
+            "Data": str(data)
+        })
         print(f"Message from {sender_id} to {receiver_id}: {message_size_bytes} bytes, "
               f"delay {delay_seconds*1000:.3f} ms")
         return data

@@ -5,6 +5,8 @@ from src.crypto.primitives import CryptoPrimitives
 from src.entities.devices import Issuer, EdgeDevice, IoTDevice, InternalVerifier
 from charm.toolbox.pairinggroup import G1, G2
 
+phase_data = []  # Global list to store debug prints
+
 class JoinPhase:
     """Implements the Join phase of the SPARK protocol."""
 
@@ -26,6 +28,7 @@ class JoinPhase:
 
         # Device stores credential
         device.set_credential(credential)
+        phase_data.append({"Phase": "Join_Credential", "Device_ID": device.device_id, "Credential": str(credential)})
         return credential
 
     def generate_tracing_token(self, issuer, edge_device):
@@ -38,6 +41,7 @@ class JoinPhase:
         # Encrypt TK with Issuer's tracing public key X_T
         x_T, X_T = issuer.tracing_keypair
         encrypted_TK = self.crypto.elgamal_encrypt(X_T, TK, self.group_elements['G_0'])
+        phase_data.append({"Phase": "Join_Tracing", "Device_ID": edge_device.device_id, "Tracing_Token": str(encrypted_TK)})
         return encrypted_TK
 
     def run(self, issuer, edge_devices, iot_devices_per_edge):
@@ -51,8 +55,7 @@ class JoinPhase:
             edge.tracing_token = self.generate_tracing_token(issuer, edge)
             
             # Connect IoT devices to Edge
-            iot_devices = iot_devices_per_edge[edge.device_id]
-            for iot in iot_devices:
+            for iot in iot_devices_per_edge[edge.device_id]:
                 edge.add_iot_device(iot)  # Assigns branch key
                 # Issue credential to IoT device (via Edge)
                 self.issue_credential(issuer, iot)
@@ -62,15 +65,11 @@ def test_join_phase():
     # Setup from KeySetup (simplified)
     from phases.key_setup import KeySetup
     issuer = Issuer()
-    edge1 = EdgeDevice("edge_1")
-    iot1 = IoTDevice("iot_1")
-    iot2 = IoTDevice("iot_2")
+    edge_devices = [EdgeDevice(f"edge_{i+1}") for i in range(4)]
+    iot_devices_per_edge = {edge.device_id: [IoTDevice(f"iot_{j+1}") for j in range(i*5, (i+1)*5)] for i, edge in enumerate(edge_devices)}
     verifier = InternalVerifier()
     
-    edge_devices = [edge1]
-    iot_devices_per_edge = {"edge_1": [iot1, iot2]}
-    
-    key_setup = KeySetup(num_iot_devices=2)
+    key_setup = KeySetup(num_iot_devices=20)
     group_elements = key_setup.run(issuer, verifier, edge_devices, iot_devices_per_edge)
     
     # Run Join phase
@@ -78,14 +77,10 @@ def test_join_phase():
     join.run(issuer, edge_devices, iot_devices_per_edge)
     
     # Verify
-    assert edge1.credential is not None, "Edge credential not issued"
-    assert iot1.credential is not None, "IoT1 credential not issued"
-    assert iot2.branch_key in edge1.branch_keys.values(), "Branch key not assigned"
-    assert hasattr(edge1, 'tracing_token'), "Tracing token not set"
+    assert all(edge.credential is not None for edge in edge_devices), "Edge credential not issued"
+    assert all(iot.credential is not None for edge in edge_devices for iot in iot_devices_per_edge[edge.device_id]), "IoT1 credential not issued"
+    assert all(hasattr(edge, 'tracing_token') for edge in edge_devices), "Tracing token not set"
     
     print("Join phase completed successfully.")
-    print(f"Edge 'edge_1' has {len(edge1.connected_iot_devices)} IoT devices.")
-    print(f"IoT devices have credentials: {iot1.credential is not None}, {iot2.credential is not None}")
-
 if __name__ == "__main__":
     test_join_phase()

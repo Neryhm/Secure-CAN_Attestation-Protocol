@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from src.crypto.primitives import CryptoPrimitives
 from src.entities.tpm_emulator import TPMEmulator
 
+phase_data = []  # Global list to store debug prints
 class IoTDevice:
     """Represents an IoT device (e.g., ECU) in the SPARK protocol."""
     
@@ -106,32 +107,33 @@ def test_entities():
     """Test the entity classes and their interactions."""
     issuer = Issuer()
     verifier = InternalVerifier()
-    edge = EdgeDevice("edge_1")
-    iot1 = IoTDevice("iot_1")
-    iot2 = IoTDevice("iot_2")
+    edge_devices = [EdgeDevice(f"edge_{i+1}") for i in range(4)]
+    iot_devices = {edge.device_id: [IoTDevice(f"iot_{j+1}") for j in range(i*5, (i+1)*5)] for i, edge in enumerate(edge_devices)}
     
     issuer.generate_tracing_keypair()
     tracer = Tracer(issuer.tracing_keypair[0])
     
     verifier.set_issuer_public_key(issuer.public_key)
-    edge.add_iot_device(iot1)
-    edge.add_iot_device(iot2)
+    for edge in edge_devices:
+        for iot in iot_devices[edge.device_id]:
+            edge.add_iot_device(iot)
     
     # Simulate Join phase for tracing token
     from phases.join import JoinPhase
-    join = JoinPhase({'G_0': edge.crypto.g1})  # Minimal group elements for test
-    join.run(issuer, [edge], {"edge_1": [iot1, iot2]})
+    join = JoinPhase({'G_0': edge_devices[0].crypto.g1})
+    join.run(issuer, edge_devices, iot_devices)
     
     # Test tracing
-    traced_id = tracer.trace_device(edge)
+    traced_id = tracer.trace_device(edge_devices[0])
     
-    assert edge.public_key == edge.tpm.get_public_key(), "Edge TPM key mismatch"
-    assert iot1.branch_key in edge.branch_keys.values(), "Branch key not assigned"
+    assert edge_devices[0].public_key == edge_devices[0].tpm.get_public_key(), "Edge TPM key mismatch"
+    assert all(iot.branch_key in edge.branch_keys.values() for edge in edge_devices for iot in iot_devices[edge.device_id]), "Branch key not assigned"
     assert verifier.issuer_public_key == issuer.public_key, "Verifier key mismatch"
     assert tracer.tracing_private_key == issuer.tracing_keypair[0], "Tracer key mismatch"
     assert traced_id == "edge_1", "Tracing failed to identify device"
     
     print("Entity classes initialized and connected successfully.")
-    print(f"Edge device manages {len(edge.connected_iot_devices)} IoT devices.")
+    for edge in edge_devices:
+        print(f"Edge {edge.device_id} manages {len(edge.connected_iot_devices)} IoT devices.")
     print(f"Issuer public key: {issuer.public_key != None}")
     print(f"Traced device ID: {traced_id}")
