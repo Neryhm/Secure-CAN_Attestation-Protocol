@@ -18,7 +18,13 @@ class JoinPhase:
         s, c = self.crypto.schnorr_sign(issuer.private_key, (A, B), self.group_elements['G_0'])
         credential = (A, B, s, c)
         device.set_credential(credential)
-        self.phase_data.append({"Phase": "Join_Credential", "Device_ID": device.device_id, "Credential": str(credential)})
+        self.phase_data.append({
+            "Phase": "Join_Credential",
+            "Device_ID": device.device_id,
+            "Credential": str(credential),
+            "Inputs": ["issuer.private_key", f"{device.device_id}.public_key", "G_0"],  # Used to compute credential
+            "Outputs": [f"{device.device_id}.credential"]  # Unique output per device
+        })
         return credential
 
     def generate_tracing_token(self, issuer, edge_device):
@@ -26,7 +32,13 @@ class JoinPhase:
         TK = self.crypto.ec_multiply(tk_base, self.group_elements['G_0'], G1)
         x_T, X_T = issuer.tracing_keypair
         encrypted_TK = self.crypto.elgamal_encrypt(X_T, TK, self.group_elements['G_0'])
-        self.phase_data.append({"Phase": "Join_Tracing", "Device_ID": edge_device.device_id, "Tracing_Token": str(encrypted_TK)})
+        self.phase_data.append({
+            "Phase": "Join_Tracing",
+            "Device_ID": edge_device.device_id,
+            "Tracing_Token": str(encrypted_TK),
+            "Inputs": ["issuer.tracing_keypair", "G_0"],
+            "Outputs": [f"{edge_device.device_id}.tracing_token"]
+        })
         return encrypted_TK
 
     def run(self, issuer, edge_devices, iot_devices_per_edge):

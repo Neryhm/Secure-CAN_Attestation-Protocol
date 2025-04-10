@@ -29,7 +29,13 @@ class VerificationPhase:
             "Left": str(left),
             "Right": str(right),
             "Computed_c": str(computed_c),
-            "Result": result
+            "Result": result,
+            "Inputs": (
+                [f"{edge.device_id}.signature", "G_0"] +
+                [f"{edge.device_id}.public_key"] +
+                [f"{iot.device_id}.public_key" for iot in edge.connected_iot_devices]
+            ),
+            "Outputs": [f"{edge.device_id}.verification_result"]
         })
         return result
 

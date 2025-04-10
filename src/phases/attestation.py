@@ -15,7 +15,14 @@ class AttestationPhase:
         r = self.crypto.generate_random_Zq()
         R = self.crypto.ec_multiply(r, self.group_elements['G_0'], G1)
         data = await self.network.send_message(iot_device.device_id, edge_id, 64, (r, R))
-        self.phase_data.append({"Phase": "Attestation_IoT", "Device_ID": iot_device.device_id, "r": str(r), "R": str(R)})
+        self.phase_data.append({
+            "Phase": "Attestation_IoT",
+            "Device_ID": iot_device.device_id,
+            "r": str(r),
+            "R": str(R),
+            "Inputs": [f"{iot_device.device_id}.private_key", "G_0"],  # r is random, R uses G_0 and private key implicitly
+            "Outputs": [f"{iot_device.device_id}.r", f"{iot_device.device_id}.R"]
+        })
         return data
 
     async def run(self, verifier, edge_devices, message="attestation_request"):
@@ -45,7 +52,17 @@ class AttestationPhase:
             sigma = (s_total, c, R_total)
             sigma_sent = await self.network.send_message(edge.device_id, "verifier", 128, sigma)
             aggregated_signatures[edge.device_id] = sigma_sent
-            self.phase_data.append({"Phase": "Attestation_Edge", "Device_ID": edge.device_id, "Signature": str(sigma_sent)})
+            self.phase_data.append({
+                "Phase": "Attestation_Edge",
+                "Device_ID": edge.device_id,
+                "Signature": str(sigma_sent),
+                "Inputs": (
+                    [f"{edge.device_id}.tpm.private_key", f"{edge.device_id}.r_edge", "G_0"] +
+                    [f"{iot.device_id}.r" for iot in edge.connected_iot_devices] +
+                    [f"{iot.device_id}.private_key" for iot in edge.connected_iot_devices]
+                ),
+                "Outputs": [f"{edge.device_id}.signature"]
+            })
 
         verifier.attestation_results = aggregated_signatures
         return aggregated_signatures
