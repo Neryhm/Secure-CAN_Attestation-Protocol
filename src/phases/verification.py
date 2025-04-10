@@ -1,17 +1,13 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from src.crypto.primitives import CryptoPrimitives
 from src.entities.devices import InternalVerifier, Issuer, EdgeDevice, IoTDevice
 from charm.toolbox.pairinggroup import G1, G2
 import asyncio
 
-phase_data = []  # Global list to store debug prints
-
 class VerificationPhase:
-    def __init__(self, group_elements):
+    def __init__(self, group_elements, phase_data=None):
         self.crypto = CryptoPrimitives()
         self.group_elements = group_elements
+        self.phase_data = phase_data
 
     def verify_signature(self, verifier, edge, signature, message="attestation_request"):
         s, c, R_total = signature
@@ -23,18 +19,8 @@ class VerificationPhase:
         right = self.crypto.ec_add(R_total, self.crypto.ec_multiply(c, total_pk, G1))
         computed_c = self.crypto.hash_to_Zq(R_total, message)
         
-        # Add debug prints
-        print(f"Device: {edge.device_id}")
-        print(f"  Left (s * G_0): {left}")
-        print(f"  Right (R_total + c * total_pk): {right}")
-        print(f"  Signature equation holds: {left == right}")
-        print(f"  c from signature: {c}")
-        print(f"  Computed c: {computed_c}")
-        print(f"  Challenge matches: {c == computed_c}")
-        print(f"  Connected IoT devices: {[iot.device_id for iot in edge.connected_iot_devices]}")
-        
         result = left == right and c == computed_c
-        phase_data.append({
+        self.phase_data.append({
             "Phase": "Verification",
             "Device_ID": edge.device_id,
             "s": str(s),
@@ -46,11 +32,9 @@ class VerificationPhase:
             "Result": result
         })
         return result
-    
 
     async def run(self, verifier, edge_devices, message="attestation_request"):
         results = {}
-        
         for edge in edge_devices:
             edge_id = edge.device_id
             if edge_id in verifier.attestation_results:
@@ -59,35 +43,27 @@ class VerificationPhase:
                 results[edge_id] = is_valid
             else:
                 results[edge_id] = False
-        
         verifier.attestation_results = results
         return results
 
-# Optional test code
 async def test_verification_phase():
     from phases.key_setup import KeySetup
     from phases.join import JoinPhase
     from phases.attestation import AttestationPhase
-    
     issuer = Issuer()
     verifier = InternalVerifier()
     edge_devices = [EdgeDevice(f"edge_{i+1}") for i in range(4)]
     iot_devices_per_edge = {edge.device_id: [IoTDevice(f"iot_{j+1}") for j in range(i*5, (i+1)*5)] for i, edge in enumerate(edge_devices)}
-    
     key_setup = KeySetup(num_iot_devices=20)
     group_elements = key_setup.run(issuer, verifier, edge_devices, iot_devices_per_edge)
-    
     join = JoinPhase(group_elements)
     join.run(issuer, edge_devices, iot_devices_per_edge)
-    
     attestation = AttestationPhase(group_elements)
     await attestation.run(verifier, edge_devices)
-    
     verification = VerificationPhase(group_elements)
     results = await verification.run(verifier, edge_devices)
-    
-    assert all(results.values()), "Verification failed"
-    print(f"Verification results: {results}")
+    assert all(results.values())
+    print("Verification phase completed successfully.")
 
 if __name__ == "__main__":
     asyncio.run(test_verification_phase())

@@ -5,96 +5,63 @@ from src.crypto.primitives import CryptoPrimitives
 from src.entities.devices import Issuer, InternalVerifier, EdgeDevice, IoTDevice
 from charm.toolbox.pairinggroup import G1, G2
 
-phase_data = []  # Global list to store debug prints
-
 class KeySetup:
-    """Implements the Key Setup phase of the SPARK protocol."""
-
-    def __init__(self, num_iot_devices=2):
+    def __init__(self, num_iot_devices=20, phase_data=None):
         self.crypto = CryptoPrimitives()
-        self.num_iot_devices = num_iot_devices  # Number of IoT devices per Edge
-        self.group_elements = {}  # Public group elements (G_0, G_1, ..., G_n)
+        self.num_iot_devices = num_iot_devices
+        self.group_elements = {}
+        self.phase_data = phase_data
 
     def generate_group_elements(self):
-        """Generate public group elements G_0, G_1, ..., G_n and H_0, H_1.
-        See Section 7.2.1: 'Setup generates public parameters'"""
-        # G_0 is already in CryptoPrimitives as g1
         self.group_elements['G_0'] = self.crypto.g1
-        # Generate additional G_i elements for credentials and signatures
         for i in range(1, self.num_iot_devices + 1):
             self.group_elements[f'G_{i}'] = self.crypto.group.random(G1)
-        # H_0 and H_1 for tracing and zero-knowledge proofs
         self.group_elements['H_0'] = self.crypto.group.random(G1)
         self.group_elements['H_1'] = self.crypto.group.random(G1)
-        # G_0_bar (in G2) is already in CryptoPrimitives as g2
         self.group_elements['G_0_bar'] = self.crypto.g2
-        phase_data.append({"Phase": "KeySetup_Generate", "Group_Elements": {k: str(v) for k, v in self.group_elements.items()}})
+        self.phase_data.append({"Phase": "KeySetup_Generate", "Group_Elements": {k: str(v) for k, v in self.group_elements.items()}})
 
     def setup_issuer(self, issuer):
-        """Set up the Issuer's key pair and tracing keys.
-        See Section 7.2.1: 'Issuer chooses alpha <- Z_q'"""
-        # Issuer's key pair (alpha, X) is already generated in Issuer.__init__
-        # Generate tracing key pair (x_T, X_T)
         issuer.generate_tracing_keypair()
-        phase_data.append({"Phase": "KeySetup_Issuer", "Issuer_Private": str(issuer.private_key), "Issuer_Public": str(issuer.public_key), "Tracing_Keypair": str(issuer.tracing_keypair)})
+        self.phase_data.append({"Phase": "KeySetup_Issuer", "Issuer_Private": str(issuer.private_key), "Issuer_Public": str(issuer.public_key), "Tracing_Keypair": str(issuer.tracing_keypair)})
 
     def setup_verifier(self, verifier, issuer):
-        """Provide the Internal Verifier with the Issuer's public key."""
         verifier.set_issuer_public_key(issuer.public_key)
-        phase_data.append({"Phase": "KeySetup_Verifier", "Issuer_Public": str(verifier.issuer_public_key)})
+        self.phase_data.append({"Phase": "KeySetup_Verifier", "Issuer_Public": str(verifier.issuer_public_key)})
 
     def setup_edge_device(self, edge_device):
-        """Initialize Edge device with a key pair (to be certified in Join).
-        See Section 7.2.1: 'TPM chooses secret signing key x_0'"""
-        # TPM key pair (x_0, PK) is already set in TPMEmulator.initialize()
-        # For simulation, generate an additional key pair for Edge (sk_0, PK_0)
-        # edge_device.private_key = self.crypto.generate_random_Zq()
-        # edge_device.public_key = self.crypto.ec_multiply(edge_device.private_key, self.crypto.g1)
         pass
 
     def setup_iot_device(self, iot_device):
-        """Initialize IoT device with a key pair (to be certified in Join)."""
         iot_device.private_key = self.crypto.generate_random_Zq()
         iot_device.public_key = self.crypto.ec_multiply(iot_device.private_key, self.crypto.g1)
-        phase_data.append({"Phase": "KeySetup_IoT", "Device_ID": iot_device.device_id, "Private_Key": str(iot_device.private_key), "Public_Key": str(iot_device.public_key)})
+        self.phase_data.append({"Phase": "KeySetup_IoT", "Device_ID": iot_device.device_id, "Private_Key": str(iot_device.private_key), "Public_Key": str(iot_device.public_key)})
 
     def run(self, issuer, verifier, edge_devices, iot_devices_per_edge):
-        """Execute the Key Setup phase for all entities."""
-        # Generate public group elements
         self.generate_group_elements()
-        
-        # Setup Issuer and Verifier
         self.setup_issuer(issuer)
         self.setup_verifier(verifier, issuer)
-        
-        # Setup Edge devices and their connected IoT devices
+
         for edge in edge_devices:
             self.setup_edge_device(edge)
-            phase_data.append({"Phase": "KeySetup_Edge", "Device_ID": edge.device_id, "TPM_Private": str(edge.tpm.private_key), "TPM_Public": str(edge.tpm.public_key)})
+            self.phase_data.append({"Phase": "KeySetup_Edge", "Device_ID": edge.device_id, "TPM_Private": str(edge.tpm.private_key), "TPM_Public": str(edge.tpm.public_key)})
             for iot in iot_devices_per_edge[edge.device_id]:
                 self.setup_iot_device(iot)
-                edge.add_iot_device(iot)  # Connect IoT to Edge
-        
+                edge.add_iot_device(iot)
         return self.group_elements
 
 def test_key_setup():
-    """Test the Key Setup phase."""
-    # Initialize entities
     issuer = Issuer()
     verifier = InternalVerifier()
     edge_devices = [EdgeDevice(f"edge_{i+1}") for i in range(4)]
     iot_devices_per_edge = {edge.device_id: [IoTDevice(f"iot_{j+1}") for j in range(i*5, (i+1)*5)] for i, edge in enumerate(edge_devices)}
     key_setup = KeySetup(num_iot_devices=20)
     group_elements = key_setup.run(issuer, verifier, edge_devices, iot_devices_per_edge)
-    
-    # Verify setup
-    assert 'G_0' in group_elements and 'G_20' in group_elements, "Group elements missing"
-    assert issuer.public_key is not None, "Issuer public key not set"
-    assert verifier.issuer_public_key == issuer.public_key, "Verifier key mismatch"
+    assert 'G_0' in group_elements and 'G_20' in group_elements
+    assert issuer.public_key is not None
+    assert verifier.issuer_public_key == issuer.public_key
     assert all(len(edge.connected_iot_devices) == 5 for edge in edge_devices)
-    
     print("Key Setup phase completed successfully.")
-    print(f"Generated {len(group_elements)} group elements.")
 
 if __name__ == "__main__":
     test_key_setup()
