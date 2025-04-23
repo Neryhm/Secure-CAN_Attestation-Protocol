@@ -156,4 +156,6 @@ class TestSPARKProtocol(unittest.TestCase):
             logger.debug(f"IoT {iot_id} variables verified")
 
 if __name__ == '__main__':
-    unittest.main()
+    with open('test_spark.txt', 'w') as f:
+        runner = unittest.TextTestRunner(stream=f, verbosity=2)
+        unittest.main(testRunner=runner)
