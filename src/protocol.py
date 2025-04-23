@@ -87,11 +87,11 @@ class SPARKProtocol:
 
         # Step 5: Compute challenge
         c_data = (
-            A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
-            D_prime.to_bytes() + E0_prime.to_bytes() +
-            b''.join(ek.to_bytes() for ek in E_k_prime) +
-            R_sum.to_bytes() + message + b'0' +
-            T_r.to_bytes() + (omega_r * self.tracer.public_key + K0).to_bytes()
+            GROUP.serialize(A_prime) + GROUP.serialize(B_prime) + GROUP.serialize(C_prime) +
+            GROUP.serialize(D_prime) + GROUP.serialize(E0_prime) +
+            b''.join(GROUP.serialize(ek) for ek in E_k_prime) +
+            GROUP.serialize(R_sum) + message + b'0' +
+            GROUP.serialize(T_r) + GROUP.serialize(omega_r * self.tracer.public_key + K0)
         )
         c = CryptoUtils.hash_to_Zq(c_data)
         logger.debug("Edge %d challenge: c=%s", edge.id, c)

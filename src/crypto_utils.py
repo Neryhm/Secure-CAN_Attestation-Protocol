@@ -29,8 +29,8 @@ class CryptoUtils:
         """Generate EC-Schnorr signature (R, s) for message."""
         # Step 1: Compute commitment R = k * G
         R = k * base_point
-        # Step 2: Compute challenge c = H(message || R.to_bytes())
-        c = CryptoUtils.hash_to_Zq(message + R.to_bytes())
+        # Step 2: Compute challenge c = H(message || GROUP.serialize(R))
+        c = CryptoUtils.hash_to_Zq(message + GROUP.serialize(R))
         # Step 3: Compute s = k + c * private_key
         s = k + c * private_key
         logger.debug("Schnorr signature: R=%s, c=%s, s=%s", R, c, s)
@@ -40,8 +40,8 @@ class CryptoUtils:
     def verify_schnorr_signature(public_key: G1, message: bytes, signature: tuple, base_point: G1 = G0) -> bool:
         """Verify EC-Schnorr signature."""
         R, s = signature
-        # Step 1: Recompute challenge c = H(message || R.to_bytes())
-        c = CryptoUtils.hash_to_Zq(message + R.to_bytes())
+        # Step 1: Recompute challenge c = H(message || GROUP.serialize(R))
+        c = CryptoUtils.hash_to_Zq(message + GROUP.serialize(R))
         # Step 2: Check s * G == R + c * public_key
         lhs = s * base_point
         rhs = R + c * public_key
