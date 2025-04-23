@@ -1,7 +1,9 @@
 import logging
 from charm.toolbox.pairinggroup import ZR, G1, G2, pair
-from src.config import PAIRING_GROUP
-from src.crypto.ecc import H
+import sys
+sys.path.append('../')
+from config import PAIRING_GROUP
+from crypto.ecc import H
 
 logger = logging.getLogger(__name__)
 

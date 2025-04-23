@@ -1,6 +1,8 @@
 import logging
 from charm.toolbox.pairinggroup import ZR
-from src.config import PAIRING_GROUP
+import sys
+sys.path.append('../')
+from config import PAIRING_GROUP
 
 logger = logging.getLogger(__name__)
 

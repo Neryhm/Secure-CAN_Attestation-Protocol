@@ -1,12 +1,14 @@
 import logging
 from charm.toolbox.pairinggroup import G1, G2, GT, ZR
-from src.config import PAIRING_GROUP, EDGES, IOT_DEVICES
-from src.entities.edge import Edge
-from src.entities.iot import IoT
-from src.entities.issuer import Issuer
-from src.entities.tracer import Tracer
-from src.entities.verifier import Verifier
-from src.crypto.ecc import verify_schnorr_proof
+import sys
+sys.path.append('../')
+from config import PAIRING_GROUP, EDGES, IOT_DEVICES
+from entities.edge import Edge
+from entities.iot import IoT
+from entities.issuer import Issuer
+from entities.tracer import Tracer
+from entities.verifier import Verifier
+from crypto.ecc import verify_schnorr_proof
 
 logger = logging.getLogger(__name__)
 

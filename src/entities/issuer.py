@@ -1,7 +1,9 @@
 import logging
 from charm.toolbox.pairinggroup import ZR
-from src.config import PAIRING_GROUP
-from src.crypto.ecc import generate_schnorr_proof
+import sys
+sys.path.append('../')
+from config import PAIRING_GROUP
+from crypto.ecc import generate_schnorr_proof
 
 logger = logging.getLogger(__name__)
 

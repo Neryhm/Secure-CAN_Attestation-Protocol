@@ -1,8 +1,10 @@
 import logging
 from charm.toolbox.pairinggroup import ZR, G1
-from src.config import PAIRING_GROUP
-from src.crypto.ecc import H, H1, generate_schnorr_proof, verify_schnorr_proof
-from src.crypto.tpm_sim import TPM
+import sys
+sys.path.append('../')
+from config import PAIRING_GROUP
+from crypto.ecc import H, H1, generate_schnorr_proof, verify_schnorr_proof
+from crypto.tpm_sim import TPM
 
 logger = logging.getLogger(__name__)
 

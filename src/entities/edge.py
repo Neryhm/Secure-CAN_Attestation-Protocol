@@ -1,5 +1,7 @@
 import logging
-from src.crypto.tpm_sim import generate_tpm_key, create_tpm_policy
+import sys
+sys.path.append('../')
+from crypto.tpm_sim import generate_tpm_key, create_tpm_policy
 
 logger = logging.getLogger(__name__)
 

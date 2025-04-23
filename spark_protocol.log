@@ -1,4 +1,4 @@
-2025-04-23 15:38:14,572 - INFO - Logging configured
-2025-04-23 15:38:14,652 - INFO - Pairing group initialized: BN254
-2025-04-23 15:38:14,652 - INFO - Defined network with 4 Edge devices: ['Edge_1', 'Edge_2', 'Edge_3', 'Edge_4']
-2025-04-23 15:38:14,652 - INFO - Initialized 18 IoT devices
+2025-04-23 16:28:39,285 - INFO - Logging configured
+2025-04-23 16:28:39,385 - INFO - Pairing group initialized: BN254
+2025-04-23 16:28:39,385 - INFO - Defined network with 4 Edge devices: ['Edge_1', 'Edge_2', 'Edge_3', 'Edge_4']
+2025-04-23 16:28:39,385 - INFO - Initialized 18 IoT devices

@@ -1,6 +1,9 @@
 import logging
-from src.protocols.attestation import attest_device
-from src.protocols.verification import verify_signature
+from charm.toolbox.pairinggroup import G1, G2
+import sys
+sys.path.append('../')
+from protocols.attestation import attest_device
+from protocols.verification import verify_signature
 
 logger = logging.getLogger(__name__)
 

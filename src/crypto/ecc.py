@@ -2,7 +2,9 @@ import logging
 from charm.toolbox.pairinggroup import PairingGroup, G1, G2, ZR
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
-from src.config import PAIRING_GROUP
+import sys
+sys.path.append('../')
+from config import PAIRING_GROUP
 
 logger = logging.getLogger(__name__)
 
