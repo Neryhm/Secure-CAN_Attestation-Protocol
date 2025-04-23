@@ -1,56 +1,29 @@
 ======================================================================
-ERROR: test_attestation_phase (__main__.TestSPARKProtocol.test_attestation_phase)
-Test Attestation Phase.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 98, in test_attestation_phase
-    signature = self.protocol.attestation_phase(self.edge, self.message)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
-    A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
-    ^^^^^^^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
-
-======================================================================
-ERROR: test_schnorr_signature (__main__.TestSPARKProtocol.test_schnorr_signature)
-Test EC-Schnorr signature.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 39, in test_schnorr_signature
-    signature = CryptoUtils.generate_schnorr_signature(private_key, self.message, k)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/crypto_utils.py", line 33, in generate_schnorr_signature
-    c = CryptoUtils.hash_to_Zq(message + R.to_bytes())
-                                         ^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
-
-======================================================================
-ERROR: test_tracing_phase (__main__.TestSPARKProtocol.test_tracing_phase)
-Test Tracing Phase.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 114, in test_tracing_phase
-    signature = self.protocol.attestation_phase(self.edge, self.message)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
-    A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
-    ^^^^^^^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
-
-======================================================================
 ERROR: test_verification_phase (__main__.TestSPARKProtocol.test_verification_phase)
 Test Verification Phase.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 106, in test_verification_phase
-    signature = self.protocol.attestation_phase(self.edge, self.message)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
-    A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
-    ^^^^^^^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 107, in test_verification_phase
+    result = self.protocol.verification_phase(signature, self.message, self.edge)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 123, in verification_phase
+    result = self.internal_verifier.verify_signature(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/entities.py", line 124, in verify_signature
+    G_k_tilde = [CryptoUtils.hash_to_G1(GROUP.serialize(pk)).__class__(G0_tilde) for pk in G_k]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SystemError: <class 'pairing.Element'> returned NULL without setting an exception
+
+======================================================================
+FAIL: test_tracing_phase (__main__.TestSPARKProtocol.test_tracing_phase)
+Test Tracing Phase.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 117, in test_tracing_phase
+    self.assertEqual(traced_pk, self.edge.tpm.public_key)
+AssertionError: None != [2474434908210391515179452458271606058389[111 chars]7298]
 
 ----------------------------------------------------------------------
-Ran 9 tests in 1.905s
+Ran 9 tests in 2.085s
 
-FAILED (errors=4)
+FAILED (failures=1, errors=1)
