@@ -108,7 +108,7 @@ class CryptoUtils:
         raise ValueError("Decryption failed")
 
     @staticmethod
-    def compute_pairing(a: G1, b: G2) -> 'GT':
+    def compute_pairing(a: G1, b: G2):
         """Compute Type III pairing e: G1 x G2 -> GT."""
         result = pair(a, b)
         logger.debug("Pairing: a=%s, b=%s, result=%s", a, b, result)
