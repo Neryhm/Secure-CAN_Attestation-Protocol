@@ -139,11 +139,11 @@ class Verifier:
         for iot in edge.iot_devices:
             R_sum += iot.commit()[1]
         c_data = (
-            A_prime.serialize() + B_prime.serialize() + C_prime.serialize() +
-            D_prime.serialize() + E0_prime.serialize() +
-            b''.join(ek.serialize() for ek in E_k_prime) +
-            R_sum.serialize() + message + str(k).encode() +
-            (s_r * G0).serialize() + (s_r * edge.tpm.public_key).serialize()
+            A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
+            D_prime.to_bytes() + E0_prime.to_bytes() +
+            b''.join(ek.to_bytes() for ek in E_k_prime) +
+            R_sum.to_bytes() + message + str(k).encode() +
+            (s_r * G0).to_bytes() + (s_r * edge.tpm.public_key).to_bytes()
         )
         computed_c = CryptoUtils.hash_to_Zq(c_data)
         if computed_c != c:
