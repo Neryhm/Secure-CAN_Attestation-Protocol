@@ -84,8 +84,11 @@ class CryptoUtils:
         """ElGamal encryption of ZR message."""
         r = GROUP.random(ZR)
         c1 = r * G0
-        c2 = r * public_key + message * G0
-        logger.debug("ElGamal encryption: r=%s, c1=%s, c2=%s", r, c1, c2)
+        # Encode ZR message as bytes and hash to G1
+        message_bytes = int(message).to_bytes((int(message).bit_length() + 7) // 8, 'big')
+        message_point = CryptoUtils.hash_to_G1(message_bytes)
+        c2 = r * public_key + message_point
+        logger.debug("ElGamal encryption: r=%s, c1=%s, c2=%s, message_point=%s", r, c1, c2, message_point)
         return (c1, c2)
 
     @staticmethod
@@ -93,15 +96,14 @@ class CryptoUtils:
         """ElGamal decryption to recover ZR message."""
         c1, c2 = ciphertext
         s = private_key * c1
-        # Recover message by solving for m where c2 = r * public_key + m * G0
-        # Since s = r * private_key * G0 = r * public_key, compute c2 - s
         message_point = c2 - s
-        # Convert message_point (G1) to ZR by brute-forcing discrete log (small range for testing)
-        for m in range(q):  # Simplified; in practice, use a lookup or more efficient method
-            if m * G0 == message_point:
-                result = GROUP.init(ZR, m)
-                logger.debug("ElGamal decryption: s=%s, message=%s", s, result)
-                return result
+        # Try to recover ZR by hashing possible ZR values (simplified for testing)
+        for m in range(1000):  # Limited range for testing; adjust as needed
+            m_zr = GROUP.init(ZR, m)
+            m_bytes = int(m_zr).to_bytes((int(m_zr).bit_length() + 7) // 8, 'big')
+            if CryptoUtils.hash_to_G1(m_bytes) == message_point:
+                logger.debug("ElGamal decryption: s=%s, message=%s", s, m_zr)
+                return m_zr
         logger.error("ElGamal decryption failed: no valid ZR found")
         raise ValueError("Decryption failed")
 

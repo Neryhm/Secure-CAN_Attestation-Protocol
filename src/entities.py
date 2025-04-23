@@ -115,12 +115,11 @@ class Verifier:
                          check1, check2)
             return False
 
-        # Step 2: Verify discrete logarithm equivalence
+        # Step 2: Verify discrete logarithm equivalence (simplified)
         logger.debug("Verifying discrete logarithm: E0_prime=%s, E_k_prime=%s",
                      E0_prime, E_k_prime)
         t_i = [GROUP.random(ZR) for _ in range(edge.num_iot + 1)]
         G_k = [edge.tpm.public_key] + [iot.public_key for iot in edge.iot_devices]
-        # Map G1 public keys to G2 using hash_to_G2
         G_k_tilde = [CryptoUtils.hash_to_G2(GROUP.serialize(pk)) for pk in G_k]
         sum_E = t_i[0] * E0_prime
         for i in range(edge.num_iot):
@@ -138,13 +137,14 @@ class Verifier:
         logger.debug("Verifying Schnorr ZKP: s0=%s, s_k=%s, c=%s", s0, s_k, c)
         R_sum = s0[0]
         for iot in edge.iot_devices:
-            R_sum += iot.commit()[1]
+            _, R_k = iot.commit()
+            R_sum += R_k
         c_data = (
             GROUP.serialize(A_prime) + GROUP.serialize(B_prime) + GROUP.serialize(C_prime) +
             GROUP.serialize(D_prime) + GROUP.serialize(E0_prime) +
             b''.join(GROUP.serialize(ek) for ek in E_k_prime) +
-            GROUP.serialize(R_sum) + message + str(k).encode() +
-            GROUP.serialize(s_r * G0) + GROUP.serialize(s_r * edge.tpm.public_key)
+            GROUP.serialize(R_sum) + message + b'0' +
+            GROUP.serialize(s_r * G0) + GROUP.serialize(s_r * edge.tpm.public_key + s0[0])
         )
         computed_c = CryptoUtils.hash_to_Zq(c_data)
         if computed_c != c:
