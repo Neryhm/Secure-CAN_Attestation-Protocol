@@ -42,19 +42,36 @@ def join_phase(key_setup_result):
         s = PAIRING_GROUP.random(ZR)  # Random scalar
         H1_B = H1(str(B))
         logger.debug(f"Edge {edge.id}: H1(B)={H1_B}")
-        A = (G + edge.public_key + H1_B * s) * PAIRING_GROUP.init(ZR, 1) / (e + x)  # CL signature
+        # Compute A = (G + PK + H1(B)^s)^(1/(e+x)) using modular inverse
+        denominator = e + x
+        if denominator == PAIRING_GROUP.init(ZR, 0):
+            logger.error(f"Edge {edge.id}: Denominator e+x is zero, regenerating e")
+            e = PAIRING_GROUP.random(ZR)  # Regenerate e to avoid zero denominator
+            denominator = e + x
+        inv_denominator = 1 / denominator  # Compute modular inverse in ZR
+        logger.debug(f"Edge {edge.id}: e={e}, x={x}, e+x={denominator}, inv(e+x)={inv_denominator}")
+        base = G + edge.public_key + H1_B * s
+        A = base * inv_denominator  # A = (G + PK + H1(B)^s)^(1/(e+x))
         edge.credential = {'A': A, 'e': e, 's': s, 'tpm_signature': tpm_signature}
         logger.debug(f"Edge {edge.id}: Credential CRE={edge.credential}")
 
         # Process IoT devices under this Edge
         for iot_id in edge.iots:
-            iot = iots[f"{edge.id}_{iot_id}"]
+            iot = iots[iot_id]  # Use iot_id directly
             logger.info(f"Processing IoT {iot.id}")
 
             # Generate IoT credential (CL signature)
             e_iot = PAIRING_GROUP.random(ZR)
             s_iot = PAIRING_GROUP.random(ZR)
-            A_iot = (G + iot.public_key + H1_B * s_iot) * PAIRING_GROUP.init(ZR, 1) / (e_iot + x)
+            denominator_iot = e_iot + x
+            if denominator_iot == PAIRING_GROUP.init(ZR, 0):
+                logger.error(f"IoT {iot.id}: Denominator e+x is zero, regenerating e_iot")
+                e_iot = PAIRING_GROUP.random(ZR)
+                denominator_iot = e_iot + x
+            inv_denominator_iot = 1 / denominator_iot  # Compute modular inverse in ZR
+            logger.debug(f"IoT {iot.id}: e_iot={e_iot}, x={x}, e_iot+x={denominator_iot}, inv(e_iot+x)={inv_denominator_iot}")
+            base_iot = G + iot.public_key + H1_B * s_iot
+            A_iot = base_iot * inv_denominator_iot  # A = (G + X_k + H1(B)^s)^(1/(e+x))
             iot.credential = {'A': A_iot, 'e': e_iot, 's': s_iot}
             logger.debug(f"IoT {iot.id}: Credential CRE={iot.credential}")
 

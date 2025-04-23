@@ -1,7 +1,7 @@
 test_cl_signatures (__main__.TestSPARKProtocol.test_cl_signatures)
 Verify CL signatures for Edge and IoT credentials. ... ERROR
 test_curve (__main__.TestSPARKProtocol.test_curve)
-Verify BN254 curve is used. ... ERROR
+Verify BN254 curve is used. ... FAIL
 test_elgamal_tokens (__main__.TestSPARKProtocol.test_elgamal_tokens)
 Verify ElGamal tracing tokens by decryption. ... ok
 test_group_elements (__main__.TestSPARKProtocol.test_group_elements)
@@ -18,42 +18,41 @@ ERROR: test_cl_signatures (__main__.TestSPARKProtocol.test_cl_signatures)
 Verify CL signatures for Edge and IoT credentials.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 84, in test_cl_signatures
-    left = pair(A, pair(G, issuer.public_key['X_tilde']) + ks['G_tilde'])
-                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
-SystemError: error return without exception set
-
-======================================================================
-ERROR: test_curve (__main__.TestSPARKProtocol.test_curve)
-Verify BN254 curve is used.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 22, in test_curve
-    self.assertEqual(PAIRING_GROUP.curve, 'BN254', "Curve is not BN254")
-                     ^^^^^^^^^^^^^^^^^^^
-AttributeError: 'PairingGroup' object has no attribute 'curve'
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 87, in test_cl_signatures
+    self.assertTrue(PAIRING_GROUP.ismember(A, G1), f"Edge {edge.id} A not in G1")
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: PairingGroup.ismember() takes 2 positional arguments but 3 were given
 
 ======================================================================
 ERROR: test_group_elements (__main__.TestSPARKProtocol.test_group_elements)
 Verify group elements belong to correct BN254 groups.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 32, in test_group_elements
-    self.assertTrue(ks['G0'] in G1, "G0 not in G1")
-                    ^^^^^^^^^^^^^^
-TypeError: argument of type 'int' is not iterable
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 35, in test_group_elements
+    self.assertTrue(PAIRING_GROUP.ismember(ks['G0'], G1), "G0 not in G1")
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: PairingGroup.ismember() takes 2 positional arguments but 3 were given
 
 ======================================================================
 ERROR: test_tpm_signatures (__main__.TestSPARKProtocol.test_tpm_signatures)
 Verify simulated TPM signatures.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 125, in test_tpm_signatures
-    self.assertTrue(verify_schnorr_proof(edge.public_key, G, edge.credential['tpm_signature']),
-                                                             ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
-KeyError: 'tpm_signature'
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 131, in test_tpm_signatures
+    for edge in self.edges:
+                ^^^^^^^^^^
+AttributeError: 'TestSPARKProtocol' object has no attribute 'edges'
+
+======================================================================
+FAIL: test_curve (__main__.TestSPARKProtocol.test_curve)
+Verify BN254 curve is used.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/test_spark.py", line 25, in test_curve
+    self.assertEqual(order, expected_order, "Curve order does not match BN254")
+AssertionError: 435636601 != 21888242871839275222246405745257275088548364400416034343698204186575808495617 : Curve order does not match BN254
 
 ----------------------------------------------------------------------
-Ran 7 tests in 4.649s
+Ran 7 tests in 2.366s
 
-FAILED (errors=4)
+FAILED (failures=1, errors=3)
