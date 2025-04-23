@@ -1,84 +1,99 @@
 import logging
-from charm.toolbox.pairinggroup import ZR
+from charm.toolbox.pairinggroup import ZR, G1
 from src.config import PAIRING_GROUP
-from src.crypto.ecc import H, H1, generate_schnorr_proof
+from src.crypto.ecc import H, H1, generate_schnorr_proof, verify_schnorr_proof
+from src.crypto.tpm_sim import TPM
 
 logger = logging.getLogger(__name__)
 
 def join_phase(key_setup_result):
-    """Implement Join Phase (Section 7.2)."""
+    """Implement Join Phase (Section 7.2) with full CL credential and revocation checks."""
     logger.info("Starting Join Phase")
 
     # Extract key setup results
     G = key_setup_result['G']
+    G0 = key_setup_result['G0']
+    G_k = key_setup_result['G_k']
     G_tilde = key_setup_result['G_tilde']
     issuer = key_setup_result['issuer']
     tracer = key_setup_result['tracer']
     edges = key_setup_result['edges']
     iots = key_setup_result['iots']
-    x = issuer.private_key['x']  # Issuer private key for CL signature
+    x = issuer.private_key['x']  # Issuer private key x
+    y = issuer.private_key['y']  # Issuer private key y
 
-    # Process each Edge device
+    # Initialize revocation list (mocked, should be in issuer.py)
+    issuer.revocation_list = getattr(issuer, 'revocation_list', set())
+
     for edge in edges:
         logger.info(f"Processing Edge {edge.id}")
 
-        # Simulate TPM signature on PK
-        tpm_signature = generate_schnorr_proof(edge.tpm_key, edge.public_key, G)
-        logger.debug(f"Edge {edge.id}: TPM signature={tpm_signature}")
-
-        # Eligibility check (mocked)
-        is_eligible = edge.tpm_policy['state'] == 'correct'
-        logger.debug(f"Edge {edge.id}: Eligibility check={is_eligible}")
-        assert is_eligible, f"Edge {edge.id} not eligible"
-
-        # Generate branch key
+        # 7.2.1: Check Edge eligibility
+        if edge.public_key in issuer.revocation_list:
+            logger.error(f"Edge {edge.id}: Public key revoked")
+            raise ValueError(f"Edge {edge.id} revoked")
+        
+        # Simulate TPM authorization session
+        tpm = TPM(edge.tpm_key)
         nonce = PAIRING_GROUP.random(ZR)
-        B = H(edge.tpm_policy, nonce)  # Branch key B
-        edge.branch_key = B
-        logger.debug(f"Edge {edge.id}: Branch key B={B}, Nonce={nonce}")
+        reg_package = tpm.create_registration_package(nonce, edge.public_key)
+        tpm_signature = generate_schnorr_proof(edge.tpm_key, edge.public_key, G)
+        if not verify_schnorr_proof(edge.public_key, G, tpm_signature):
+            logger.error(f"Edge {edge.id}: Invalid TPM signature")
+            raise ValueError(f"Edge {edge.id} TPM signature invalid")
+        
+        # Check TPM policy
+        is_eligible = tpm.verify_policy(edge.tpm_policy)
+        logger.debug(f"Edge {edge.id}: Eligibility check={is_eligible}")
+        if not is_eligible:
+            logger.error(f"Edge {edge.id}: TPM policy invalid")
+            raise ValueError(f"Edge {edge.id} not eligible")
 
-        # Generate branch credential (CL signature)
-        e = PAIRING_GROUP.random(ZR)  # Random scalar (simplified, not prime)
-        s = PAIRING_GROUP.random(ZR)  # Random scalar
-        H1_B = H1(str(B))
-        logger.debug(f"Edge {edge.id}: H1(B)={H1_B}")
-        # Compute A = (G + PK + H1(B)^s)^(1/(e+x)) using modular inverse
-        denominator = e + x
-        if denominator == PAIRING_GROUP.init(ZR, 0):
-            logger.error(f"Edge {edge.id}: Denominator e+x is zero, regenerating e")
-            e = PAIRING_GROUP.random(ZR)  # Regenerate e to avoid zero denominator
-            denominator = e + x
-        inv_denominator = 1 / denominator  # Compute modular inverse in ZR
-        logger.debug(f"Edge {edge.id}: e={e}, x={x}, e+x={denominator}, inv(e+x)={inv_denominator}")
-        base = G + edge.public_key + H1_B * s
-        A = base * inv_denominator  # A = (G + PK + H1(B)^s)^(1/(e+x))
-        edge.credential = {'A': A, 'e': e, 's': s, 'tpm_signature': tpm_signature}
+        # 7.2.2: Generate branch key B = PK + sum(X_k)
+        iot_keys = [iots[iot_id].public_key for iot_id in edge.iots]
+        B = edge.public_key + sum(iot_keys, G1.identity())  # Sum public keys
+        edge.branch_key = B
+        logger.debug(f"Edge {edge.id}: Branch key B={B}")
+
+        # 7.2.3: Generate branch credential (full CL signature)
+        t = PAIRING_GROUP.random(ZR)  # Random scalar for credential
+        A = t * G
+        B_cred = y * A
+        C = x * A + t * x * y * B
+        D = t * y * B
+        E0 = t * y * G0
+        E_k = [t * y * G_k[i] for i in range(len(edge.iots))]
+        challenge = H(str(t * G) + ''.join(str(t * G_k[i]) for i in range(len(edge.iots))) + str(t * B))
+        edge.credential = {
+            'A': A, 'B': B_cred, 'C': C, 'D': D, 'E0': E0, 'E_k': E_k,
+            'challenge': challenge, 'tpm_signature': tpm_signature
+        }
         logger.debug(f"Edge {edge.id}: Credential CRE={edge.credential}")
 
         # Process IoT devices under this Edge
         for iot_id in edge.iots:
-            iot = iots[iot_id]  # Use iot_id directly
+            iot = iots[iot_id]
             logger.info(f"Processing IoT {iot.id}")
 
-            # Generate IoT credential (CL signature)
-            e_iot = PAIRING_GROUP.random(ZR)
-            s_iot = PAIRING_GROUP.random(ZR)
-            denominator_iot = e_iot + x
-            if denominator_iot == PAIRING_GROUP.init(ZR, 0):
-                logger.error(f"IoT {iot.id}: Denominator e+x is zero, regenerating e_iot")
-                e_iot = PAIRING_GROUP.random(ZR)
-                denominator_iot = e_iot + x
-            inv_denominator_iot = 1 / denominator_iot  # Compute modular inverse in ZR
-            logger.debug(f"IoT {iot.id}: e_iot={e_iot}, x={x}, e_iot+x={denominator_iot}, inv(e_iot+x)={inv_denominator_iot}")
-            base_iot = G + iot.public_key + H1_B * s_iot
-            A_iot = base_iot * inv_denominator_iot  # A = (G + X_k + H1(B)^s)^(1/(e+x))
-            iot.credential = {'A': A_iot, 'e': e_iot, 's': s_iot}
+            # Generate IoT credential (full CL signature)
+            t_iot = PAIRING_GROUP.random(ZR)
+            A_iot = t_iot * G
+            B_iot = y * A_iot
+            C_iot = x * A_iot + t_iot * x * y * B
+            D_iot = t_iot * y * B
+            E0_iot = t_iot * y * G0
+            E_k_iot = [t_iot * y * G_k[i] for i in range(len(edge.iots))]
+            challenge_iot = H(str(t_iot * G) + ''.join(str(t_iot * G_k[i]) for i in range(len(edge.iots))) + str(t_iot * B))
+            iot.credential = {
+                'A': A_iot, 'B': B_iot, 'C': C_iot, 'D': D_iot, 'E0': E0_iot, 'E_k': E_k_iot,
+                'challenge': challenge_iot
+            }
             logger.debug(f"IoT {iot.id}: Credential CRE={iot.credential}")
 
             # Generate tracing token (ElGamal encryption)
-            k = PAIRING_GROUP.random(ZR)  # Encryption randomness
-            C1 = k * G  # First part of ciphertext
-            C2 = iot.public_key + k * tracer.public_key  # Second part
+            k = PAIRING_GROUP.random(ZR)
+            C1 = k * G
+            C2 = iot.public_key + k * tracer.public_key
             iot.tracing_token = {'C1': C1, 'C2': C2}
             logger.debug(f"IoT {iot.id}: Tracing token={iot.tracing_token}")
 
