@@ -1,0 +1,56 @@
+======================================================================
+ERROR: test_attestation_phase (__main__.TestSPARKProtocol.test_attestation_phase)
+Test Attestation Phase.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 98, in test_attestation_phase
+    signature = self.protocol.attestation_phase(self.edge, self.message)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
+    A_prime.serialize() + B_prime.serialize() + C_prime.serialize() +
+    ^^^^^^^^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'serialize'
+
+======================================================================
+ERROR: test_schnorr_signature (__main__.TestSPARKProtocol.test_schnorr_signature)
+Test EC-Schnorr signature.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 39, in test_schnorr_signature
+    signature = CryptoUtils.generate_schnorr_signature(private_key, self.message, k)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/crypto_utils.py", line 34, in generate_schnorr_signature
+    c = CryptoUtils.hash_to_Zq(message + R.serialize())
+                                         ^^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'serialize'
+
+======================================================================
+ERROR: test_tracing_phase (__main__.TestSPARKProtocol.test_tracing_phase)
+Test Tracing Phase.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 114, in test_tracing_phase
+    signature = self.protocol.attestation_phase(self.edge, self.message)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
+    A_prime.serialize() + B_prime.serialize() + C_prime.serialize() +
+    ^^^^^^^^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'serialize'
+
+======================================================================
+ERROR: test_verification_phase (__main__.TestSPARKProtocol.test_verification_phase)
+Test Verification Phase.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 106, in test_verification_phase
+    signature = self.protocol.attestation_phase(self.edge, self.message)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
+    A_prime.serialize() + B_prime.serialize() + C_prime.serialize() +
+    ^^^^^^^^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'serialize'
+
+----------------------------------------------------------------------
+Ran 9 tests in 1.818s
+
+FAILED (errors=4)
