@@ -7,9 +7,9 @@ Traceback (most recent call last):
     signature = self.protocol.attestation_phase(self.edge, self.message)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
-    A_prime.serialize() + B_prime.serialize() + C_prime.serialize() +
-    ^^^^^^^^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'serialize'
+    A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
+    ^^^^^^^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
 
 ======================================================================
 ERROR: test_schnorr_signature (__main__.TestSPARKProtocol.test_schnorr_signature)
@@ -19,10 +19,10 @@ Traceback (most recent call last):
   File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/test_crypto.py", line 39, in test_schnorr_signature
     signature = CryptoUtils.generate_schnorr_signature(private_key, self.message, k)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/crypto_utils.py", line 34, in generate_schnorr_signature
-    c = CryptoUtils.hash_to_Zq(message + R.serialize())
-                                         ^^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'serialize'
+  File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/crypto_utils.py", line 33, in generate_schnorr_signature
+    c = CryptoUtils.hash_to_Zq(message + R.to_bytes())
+                                         ^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
 
 ======================================================================
 ERROR: test_tracing_phase (__main__.TestSPARKProtocol.test_tracing_phase)
@@ -33,9 +33,9 @@ Traceback (most recent call last):
     signature = self.protocol.attestation_phase(self.edge, self.message)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
-    A_prime.serialize() + B_prime.serialize() + C_prime.serialize() +
-    ^^^^^^^^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'serialize'
+    A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
+    ^^^^^^^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
 
 ======================================================================
 ERROR: test_verification_phase (__main__.TestSPARKProtocol.test_verification_phase)
@@ -46,11 +46,11 @@ Traceback (most recent call last):
     signature = self.protocol.attestation_phase(self.edge, self.message)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/novie/Code/Secure-CAN_Attestation-Protocol/Secure-CAN_Attestation-Protocol/src/protocol.py", line 90, in attestation_phase
-    A_prime.serialize() + B_prime.serialize() + C_prime.serialize() +
-    ^^^^^^^^^^^^^^^^^
-AttributeError: 'pairing.Element' object has no attribute 'serialize'
+    A_prime.to_bytes() + B_prime.to_bytes() + C_prime.to_bytes() +
+    ^^^^^^^^^^^^^^^^
+AttributeError: 'pairing.Element' object has no attribute 'to_bytes'
 
 ----------------------------------------------------------------------
-Ran 9 tests in 1.818s
+Ran 9 tests in 1.905s
 
 FAILED (errors=4)
