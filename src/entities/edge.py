@@ -10,10 +10,12 @@ class Edge:
         self.tpm_key = edge_data['tpm_key']
         self.public_key = edge_data['public_key']
         self.tpm_policy = edge_data['tpm_policy']
+        self.branch_key = None
+        self.credential = None
         logger.info(f"Initialized Edge {self.id} with {len(self.iots)} IoT devices")
 
     def generate_keys(self, G0):
-        """Generate TPM key and public key."""
+        """Generate TPM key, public key, and policy."""
         self.tpm_key = generate_tpm_key()
         self.public_key = self.tpm_key * G0
         self.tpm_policy = create_tpm_policy()

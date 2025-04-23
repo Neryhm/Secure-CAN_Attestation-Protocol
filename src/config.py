@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 logger.info("Logging configured")
 
 # Cryptographic parameters
-PAIRING_GROUP = PairingGroup('BN256')
-logger.info("Pairing group initialized: BN256")
+PAIRING_GROUP = PairingGroup('BN254')
+logger.info("Pairing group initialized: BN254")
 
 # Network structure
 EDGES = [
@@ -28,5 +28,5 @@ logger.info(f"Defined network with {len(EDGES)} Edge devices: {[edge['id'] for e
 IOT_DEVICES = {}
 for edge in EDGES:
     for iot_id in edge['iots']:
-        IOT_DEVICES[f"{edge['id']}_{iot_id}"] = {'private_key': None, 'public_key': None}
+        IOT_DEVICES[f"{edge['id']}_{iot_id}"] = {'private_key': None, 'public_key': None, 'proof': None}
 logger.info(f"Initialized {len(IOT_DEVICES)} IoT devices")
