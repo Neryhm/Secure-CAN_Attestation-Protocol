@@ -19,8 +19,11 @@ class TestSPARKProtocol(unittest.TestCase):
     def test_curve(self):
         """Verify BN254 curve is used."""
         logger.info("Testing curve configuration")
-        self.assertEqual(PAIRING_GROUP.curve, 'BN254', "Curve is not BN254")
-        logger.debug("Curve verified: BN254")
+        # Verify BN254 via group order (BN254 has a known order ~2^254)
+        order = PAIRING_GROUP.order()
+        expected_order = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+        self.assertEqual(order, expected_order, "Curve order does not match BN254")
+        logger.debug(f"Curve verified: order={order}")
 
     def test_group_elements(self):
         """Verify group elements belong to correct BN254 groups."""
@@ -29,12 +32,12 @@ class TestSPARKProtocol(unittest.TestCase):
         self.assertTrue(ks['E'] == G1, "E is not G1")
         self.assertTrue(ks['E_tilde'] == G2, "E_tilde is not G2")
         self.assertTrue(ks['F_tilde'] == GT, "F_tilde is not GT")
-        self.assertTrue(ks['G0'] in G1, "G0 not in G1")
-        self.assertTrue(ks['G0_tilde'] in G2, "G0_tilde not in G2")
-        self.assertTrue(all(gk in G1 for gk in ks['G_k']), "G_k elements not in G1")
-        self.assertTrue(all(gkt in G2 for gkt in ks['G_k_tilde']), "G_k_tilde elements not in G2")
-        self.assertTrue(ks['G'] in G1, "G not in G1")
-        self.assertTrue(ks['G_tilde'] in G2, "G_tilde not in G2")
+        self.assertTrue(PAIRING_GROUP.isMember(ks['G0'], G1), "G0 not in G1")
+        self.assertTrue(PAIRING_GROUP.isMember(ks['G0_tilde'], G2), "G0_tilde not in G2")
+        self.assertTrue(all(PAIRING_GROUP.isMember(gk, G1) for gk in ks['G_k']), "G_k elements not in G1")
+        self.assertTrue(all(PAIRING_GROUP.isMember(gkt, G2) for gkt in ks['G_k_tilde']), "G_k_tilde elements not in G2")
+        self.assertTrue(PAIRING_GROUP.isMember(ks['G'], G1), "G not in G1")
+        self.assertTrue(PAIRING_GROUP.isMember(ks['G_tilde'], G2), "G_tilde not in G2")
         logger.debug(f"Group elements verified: E={ks['E']}, E_tilde={ks['E_tilde']}, F_tilde={ks['F_tilde']}")
 
     def test_schnorr_proofs(self):
@@ -80,9 +83,16 @@ class TestSPARKProtocol(unittest.TestCase):
             A, e, s = cre['A'], cre['e'], cre['s']
             B = edge.branch_key
             PK = edge.public_key
-            # Verify: e(A, e(G_tilde, x) * G_tilde) == e(G + PK + H1(B)^s, G_tilde)
-            left = pair(A, pair(G, issuer.public_key['X_tilde']) + ks['G_tilde'])
-            right = pair(G + PK + H1(str(B)) * s, ks['G_tilde'])
+            # Verify group membership
+            self.assertTrue(PAIRING_GROUP.isMember(A, G1), f"Edge {edge.id} A not in G1")
+            self.assertTrue(PAIRING_GROUP.isMember(PK, G1), f"Edge {edge.id} PK not in G1")
+            self.assertTrue(PAIRING_GROUP.isMember(G, G1), f"Edge {edge.id} G not in G1")
+            # Verify: e(A, e(G, X_tilde) * G_tilde) == e(G + PK + H1(B)^s, G_tilde)
+            X_tilde = issuer.public_key['X_tilde']
+            G_tilde = ks['G_tilde']
+            logger.debug(f"Edge {edge.id}: A={A}, PK={PK}, G={G}, X_tilde={X_tilde}, G_tilde={G_tilde}")
+            left = pair(A, pair(G, X_tilde) + G_tilde)
+            right = pair(G + PK + H1(str(B)) * s, G_tilde)
             self.assertTrue(left == right, f"Edge {edge.id} CL signature invalid")
             logger.debug(f"Edge {edge.id} CL signature verified: A={A}, e={e}, s={s}")
 
@@ -91,8 +101,11 @@ class TestSPARKProtocol(unittest.TestCase):
             A, e, s = cre['A'], cre['e'], cre['s']
             B = [edge.branch_key for edge in edges if iot_id.startswith(edge.id)][0]
             X_k = iot.public_key
-            left = pair(A, pair(G, issuer.public_key['X_tilde']) + ks['G_tilde'])
-            right = pair(G + X_k + H1(str(B)) * s, ks['G_tilde'])
+            self.assertTrue(PAIRING_GROUP.isMember(A, G1), f"IoT {iot_id} A not in G1")
+            self.assertTrue(PAIRING_GROUP.isMember(X_k, G1), f"IoT {iot_id} X_k not in G1")
+            logger.debug(f"IoT {iot_id}: A={A}, X_k={X_k}, G={G}, X_tilde={X_tilde}, G_tilde={G_tilde}")
+            left = pair(A, pair(G, X_tilde) + G_tilde)
+            right = pair(G + X_k + H1(str(B)) * s, G_tilde)
             self.assertTrue(left == right, f"IoT {iot_id} CL signature invalid")
             logger.debug(f"IoT {iot_id} CL signature verified: A={A}, e={e}, s={s}")
 
@@ -121,7 +134,7 @@ class TestSPARKProtocol(unittest.TestCase):
         G = self.key_setup_result['G']
 
         for edge in edges:
-            # TPM signature is a Schnorr proof on PK
+            # TPM signature is stored as 'tpm_signature' in credential
             self.assertTrue(verify_schnorr_proof(edge.public_key, G, edge.credential['tpm_signature']),
                             f"Edge {edge.id} TPM signature invalid")
             logger.debug(f"Edge {edge.id} TPM signature verified")

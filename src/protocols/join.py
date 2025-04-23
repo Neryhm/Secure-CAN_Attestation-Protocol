@@ -24,8 +24,7 @@ def join_phase(key_setup_result):
 
         # Simulate TPM signature on PK
         tpm_signature = generate_schnorr_proof(edge.tpm_key, edge.public_key, G)
-        sigma_TPM = tpm_signature
-        logger.debug(f"Edge {edge.id}: TPM signature={sigma_TPM}")
+        logger.debug(f"Edge {edge.id}: TPM signature={tpm_signature}")
 
         # Eligibility check (mocked)
         is_eligible = edge.tpm_policy['state'] == 'correct'
@@ -39,10 +38,12 @@ def join_phase(key_setup_result):
         logger.debug(f"Edge {edge.id}: Branch key B={B}, Nonce={nonce}")
 
         # Generate branch credential (CL signature)
-        e = PAIRING_GROUP.random(ZR)  # Random prime (simplified as random ZR)
+        e = PAIRING_GROUP.random(ZR)  # Random scalar (simplified, not prime)
         s = PAIRING_GROUP.random(ZR)  # Random scalar
-        A = (G + edge.public_key + H1(str(B)) * s) * (1 / (e + x))  # CL signature
-        edge.credential = {'A': A, 'e': e, 's': s}
+        H1_B = H1(str(B))
+        logger.debug(f"Edge {edge.id}: H1(B)={H1_B}")
+        A = (G + edge.public_key + H1_B * s) * PAIRING_GROUP.init(ZR, 1) / (e + x)  # CL signature
+        edge.credential = {'A': A, 'e': e, 's': s, 'tpm_signature': tpm_signature}
         logger.debug(f"Edge {edge.id}: Credential CRE={edge.credential}")
 
         # Process IoT devices under this Edge
@@ -53,7 +54,7 @@ def join_phase(key_setup_result):
             # Generate IoT credential (CL signature)
             e_iot = PAIRING_GROUP.random(ZR)
             s_iot = PAIRING_GROUP.random(ZR)
-            A_iot = (G + iot.public_key + H1(str(B)) * s_iot) * (1 / (e_iot + x))
+            A_iot = (G + iot.public_key + H1_B * s_iot) * PAIRING_GROUP.init(ZR, 1) / (e_iot + x)
             iot.credential = {'A': A_iot, 'e': e_iot, 's': s_iot}
             logger.debug(f"IoT {iot.id}: Credential CRE={iot.credential}")
 
