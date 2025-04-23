@@ -25,13 +25,17 @@ class CryptoUtils:
         return result
 
     @staticmethod
+    def hash_to_G2(data: bytes) -> G2:
+        """Hash data to a point in G2 using Charm's hash function."""
+        result = GROUP.hash(data, G2)
+        logger.debug("Hash to G2: input=%s, output=%s", data.hex(), result)
+        return result
+
+    @staticmethod
     def generate_schnorr_signature(private_key: ZR, message: bytes, k: ZR, base_point: G1 = G0) -> tuple:
         """Generate EC-Schnorr signature (R, s) for message."""
-        # Step 1: Compute commitment R = k * G
         R = k * base_point
-        # Step 2: Compute challenge c = H(message || GROUP.serialize(R))
         c = CryptoUtils.hash_to_Zq(message + GROUP.serialize(R))
-        # Step 3: Compute s = k + c * private_key
         s = k + c * private_key
         logger.debug("Schnorr signature: R=%s, c=%s, s=%s", R, c, s)
         return (R, s)
@@ -40,9 +44,7 @@ class CryptoUtils:
     def verify_schnorr_signature(public_key: G1, message: bytes, signature: tuple, base_point: G1 = G0) -> bool:
         """Verify EC-Schnorr signature."""
         R, s = signature
-        # Step 1: Recompute challenge c = H(message || GROUP.serialize(R))
         c = CryptoUtils.hash_to_Zq(message + GROUP.serialize(R))
-        # Step 2: Check s * G == R + c * public_key
         lhs = s * base_point
         rhs = R + c * public_key
         result = lhs == rhs
@@ -53,15 +55,13 @@ class CryptoUtils:
     def generate_cl_credential(issuer_keys: dict, branch_key: G1, num_iot: int) -> dict:
         """Generate Camenisch-Lysyanskaya (CL) credential for branch key."""
         x, y = issuer_keys['private']['x'], issuer_keys['private']['y']
-        # Step 1: Choose random t in Z_q
         t = GROUP.random(ZR)
-        # Step 2: Compute credential components
-        A = t * G0  # A = t * G0
-        B = y * A   # B = y * A
-        C = x * A + t * x * y * branch_key  # C = x * A + t * x * y * PK
-        D = t * y * branch_key  # D = t * y * PK
-        E0 = t * y * G0  # E0 = t * y * G0
-        E_k = [t * y * GROUP.random(G1) for _ in range(num_iot)]  # E_k[i] = t * y * G_k[i]
+        A = t * G0
+        B = y * A
+        C = x * A + t * x * y * branch_key
+        D = t * y * branch_key
+        E0 = t * y * G0
+        E_k = [t * y * GROUP.random(G1) for _ in range(num_iot)]
         credential = {'A': A, 'B': B, 'C': C, 'D': D, 'E0': E0, 'E_k': E_k}
         logger.info("CL credential generated: A=%s, B=%s, C=%s, D=%s, E0=%s, E_k=%s",
                     A, B, C, D, E0, E_k)
@@ -72,9 +72,7 @@ class CryptoUtils:
         """Verify CL credential using issuer's public key."""
         A, B, C, D, E0, E_k = credential.values()
         X, Y = issuer_public_key['X'], issuer_public_key['Y']
-        # Step 1: Check e(A, Y) == e(B, G0_tilde)
         check1 = pair(A, Y) == pair(B, G0_tilde)
-        # Step 2: Check e(A + D, X) == e(C, G0_tilde)
         check2 = pair(A + D, X) == pair(C, G0_tilde)
         result = check1 and check2
         logger.debug("CL credential verification: check1=%s, check2=%s, result=%s",
@@ -83,26 +81,29 @@ class CryptoUtils:
 
     @staticmethod
     def elgamal_encrypt(public_key: G1, message: ZR) -> tuple:
-        """ElGamal encryption of message (point in G1)."""
-        # Step 1: Choose random r in Z_q
+        """ElGamal encryption of ZR message."""
         r = GROUP.random(ZR)
-        # Step 2: Compute c1 = r * G0
         c1 = r * G0
-        # Step 3: Compute c2 = r * public_key + message * G0
         c2 = r * public_key + message * G0
         logger.debug("ElGamal encryption: r=%s, c1=%s, c2=%s", r, c1, c2)
         return (c1, c2)
 
     @staticmethod
-    def elgamal_decrypt(private_key: ZR, ciphertext: tuple) -> G1:
-        """ElGamal decryption to recover message point."""
+    def elgamal_decrypt(private_key: ZR, ciphertext: tuple) -> ZR:
+        """ElGamal decryption to recover ZR message."""
         c1, c2 = ciphertext
-        # Step 1: Compute s = private_key * c1
         s = private_key * c1
-        # Step 2: Recover message = c2 - s
-        message = c2 - s
-        logger.debug("ElGamal decryption: s=%s, message=%s", s, message)
-        return message
+        # Recover message by solving for m where c2 = r * public_key + m * G0
+        # Since s = r * private_key * G0 = r * public_key, compute c2 - s
+        message_point = c2 - s
+        # Convert message_point (G1) to ZR by brute-forcing discrete log (small range for testing)
+        for m in range(q):  # Simplified; in practice, use a lookup or more efficient method
+            if m * G0 == message_point:
+                result = GROUP.init(ZR, m)
+                logger.debug("ElGamal decryption: s=%s, message=%s", s, result)
+                return result
+        logger.error("ElGamal decryption failed: no valid ZR found")
+        raise ValueError("Decryption failed")
 
     @staticmethod
     def compute_pairing(a: G1, b: G2) -> 'GT':

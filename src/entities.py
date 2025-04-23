@@ -120,8 +120,8 @@ class Verifier:
                      E0_prime, E_k_prime)
         t_i = [GROUP.random(ZR) for _ in range(edge.num_iot + 1)]
         G_k = [edge.tpm.public_key] + [iot.public_key for iot in edge.iot_devices]
-        # Map G1 public keys to G2 for pairing
-        G_k_tilde = [CryptoUtils.hash_to_G1(GROUP.serialize(pk)).__class__(G0_tilde) for pk in G_k]
+        # Map G1 public keys to G2 using hash_to_G2
+        G_k_tilde = [CryptoUtils.hash_to_G2(GROUP.serialize(pk)) for pk in G_k]
         sum_E = t_i[0] * E0_prime
         for i in range(edge.num_iot):
             sum_E += t_i[i + 1] * E_k_prime[i]
@@ -165,7 +165,7 @@ class Tracer:
         """Initialize Tracer with key pair for tracing."""
         self.private_key = GROUP.random(ZR)
         self.public_key = self.private_key * G0
-        self.records = {}  # Maps trace key to public key
+        self.records = {}
         logger.info("Tracer initialized: public_key=%s", self.public_key)
 
     def trace(self, signature: dict) -> G1:
