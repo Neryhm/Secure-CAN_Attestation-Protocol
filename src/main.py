@@ -2,24 +2,40 @@ import logging
 import sys
 from io import StringIO
 from protocol import SPARKProtocol
-from config import logger, EDGE_IOT_COUNTS
+from config import EDGE_IOT_COUNTS
+
+# Configure logging for main.py
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('spark_main.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+# Set console handler to ERROR to minimize terminal output
+for handler in logger.handlers:
+    if isinstance(handler, logging.StreamHandler):
+        handler.setLevel(logging.ERROR)
 
 class OutputLogger:
     def __init__(self, filename: str):
-        """Redirect console output to file."""
+        """Redirect console output to file only."""
         self.file = open(filename, 'w')
         self.stdout = sys.stdout
         sys.stdout = self
 
     def write(self, message: str):
+        """Write to file, not terminal."""
         self.file.write(message)
-        self.stdout.write(message)
 
     def flush(self):
+        """Flush file output."""
         self.file.flush()
-        self.stdout.flush()
 
     def close(self):
+        """Restore stdout and close file."""
         sys.stdout = self.stdout
         self.file.close()
 

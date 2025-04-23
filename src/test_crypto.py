@@ -7,8 +7,20 @@ from tpm_simulator import TPMSimulator
 from entities import IoTDevice, EdgeDevice, Issuer, Verifier, Tracer
 from protocol import SPARKProtocol
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging for test_crypto.py
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('spark_test.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
+# Set console handler to ERROR to minimize terminal output
+for handler in logger.handlers:
+    if isinstance(handler, logging.StreamHandler):
+        handler.setLevel(logging.ERROR)
 
 class TestSPARKProtocol(unittest.TestCase):
     def setUp(self):
@@ -17,6 +29,7 @@ class TestSPARKProtocol(unittest.TestCase):
         self.message = b"Test message"
         self.edge = self.protocol.edges[0]  # Edge 1 with 3 IoT devices
         self.issuer_keys = self.protocol.issuer.public_key
+        logger.info("Test setup completed for Edge %d", self.edge.id)
 
     def test_schnorr_signature(self):
         """Test EC-Schnorr signature."""
@@ -81,7 +94,7 @@ class TestSPARKProtocol(unittest.TestCase):
 
     def test_attestation_phase(self):
         """Test Attestation Phase."""
-        self.protocol.join_phase()  # Ensure credentials are issued
+        self.protocol.join_phase()
         signature = self.protocol.attestation_phase(self.edge, self.message)
         self.assertIn('A_prime', signature)
         self.assertIn('ENC(TK)', signature)

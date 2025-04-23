@@ -1,16 +1,4 @@
-import logging
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2
-
-# Configure logging to capture all protocol steps
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('spark_protocol.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
 
 # Initialize pairing group for BN254 curve (per user preference)
 GROUP = PairingGroup('BN254')
@@ -41,9 +29,3 @@ BASENAME = b"spark_basename"  # Basename for attestation
 
 # TPM simulation parameters
 TPM_POLICY = {'state': 'correct'}  # Simulated TPM policy (correct state)
-
-# Log initialization details
-logger.info(
-    "Configuration initialized: BN254 curve, %d Edge devices, IoT counts=%s, %s network",
-    NUM_EDGE_DEVICES, EDGE_IOT_COUNTS, CAN_TYPE
-)
